@@ -222,6 +222,25 @@ class DioClient {
     }
   }
 
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Response> delete(
     String path, {
     dynamic data,
@@ -264,7 +283,10 @@ class DioClient {
         } else if (statusCode == 400) {
           final errors = error.response?.data;
           if (errors is Map<String, dynamic>) {
-            return ValidationException(errors: errors);
+            return ValidationException(
+              message: 'Error de validación',
+              errors: errors,
+            );
           }
         }
 

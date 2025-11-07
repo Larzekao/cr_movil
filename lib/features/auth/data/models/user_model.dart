@@ -1,135 +1,90 @@
+import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/user_entity.dart';
 
+part 'user_model.g.dart';
+
+@JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class UserModel extends UserEntity {
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final RoleModel? role;
+
   const UserModel({
-    required super.id,
-    required super.email,
-    required super.firstName,
-    required super.lastName,
-    super.phone,
-    super.profileImage,
-    required super.role,
-    required super.tenantId,
-    required super.isActive,
-    super.lastLogin,
-  });
+    required String id,
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String fullName,
+    this.role,
+    required bool isActive,
+  }) : super(
+         id: id,
+         email: email,
+         firstName: firstName,
+         lastName: lastName,
+         fullName: fullName,
+         role: role,
+         isActive: isActive,
+       );
 
-  /// Crea un UserModel desde JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Manejar role como String o Map
-    RoleEntity role;
-    final roleData = json['role'];
+    // Parse role de forma muy defensiva
+    RoleModel? role;
 
-    if (roleData is String) {
-      // Si role viene como String, crear un RoleModel básico
-      role = RoleModel(
-        id: '', // ID vacío ya que no viene en el JSON
-        name: roleData,
-        description: null,
-        permissions: [],
-      );
-    } else if (roleData is Map<String, dynamic>) {
-      // Si role viene como objeto completo
-      role = RoleModel.fromJson(roleData);
-    } else {
-      // Fallback: rol desconocido
-      role = const RoleModel(
-        id: '',
-        name: 'Usuario',
-        description: null,
-        permissions: [],
-      );
+    try {
+      final roleValue = json['role'];
+      final roleNameValue = json['role_name'];
+
+      // Caso 1: role es un Map completo con id y name
+      if (roleValue is Map<String, dynamic>) {
+        role = RoleModel.fromJson(roleValue);
+      }
+      // Caso 2: role es String (UUID) y role_name existe
+      else if (roleValue is String && roleNameValue is String) {
+        role = RoleModel(id: roleValue, name: roleNameValue);
+      }
+      // Caso 3: Cualquier otro caso, role = null
+      else {
+        role = null;
+      }
+    } catch (e) {
+      // Si hay error parseando el role, continuar con role null
+      role = null;
     }
 
-    return UserModel(
-      id: json['id']?.toString() ?? '',
-      email: json['email']?.toString() ?? '',
-      firstName: json['first_name']?.toString() ?? '',
-      lastName: json['last_name']?.toString() ?? '',
-      phone: json['phone']?.toString(),
-      profileImage: json['profile_image']?.toString(),
-      role: role,
-      tenantId: json['tenant_id']?.toString() ?? '',
-      isActive: json['is_active'] as bool? ?? true,
-      lastLogin: json['last_login'] != null
-          ? DateTime.tryParse(json['last_login'].toString())
-          : null,
-    );
+    try {
+      return UserModel(
+        id: json['id'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        firstName: json['first_name'] as String? ?? '',
+        lastName: json['last_name'] as String? ?? '',
+        fullName: json['full_name'] as String? ?? 'Usuario',
+        role: role,
+        isActive: json['is_active'] as bool? ?? true,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  /// Convierte el UserModel a JSON
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'first_name': firstName,
-      'last_name': lastName,
-      'phone': phone,
-      'profile_image': profileImage,
-      'role': (role as RoleModel).toJson(),
-      'tenant_id': tenantId,
-      'is_active': isActive,
-      'last_login': lastLogin?.toIso8601String(),
-    };
-  }
-
-  /// Crea una copia con campos actualizados
-  UserModel copyWith({
-    String? id,
-    String? email,
-    String? firstName,
-    String? lastName,
-    String? phone,
-    String? profileImage,
-    RoleEntity? role,
-    String? tenantId,
-    bool? isActive,
-    DateTime? lastLogin,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      email: email ?? this.email,
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
-      phone: phone ?? this.phone,
-      profileImage: profileImage ?? this.profileImage,
-      role: role ?? this.role,
-      tenantId: tenantId ?? this.tenantId,
-      isActive: isActive ?? this.isActive,
-      lastLogin: lastLogin ?? this.lastLogin,
-    );
+    final json = _$UserModelToJson(this);
+    // Agregar role como string ID y role_name
+    if (role != null) {
+      json['role'] = role!.id;
+      json['role_name'] = role!.name;
+    }
+    return json;
   }
 }
 
+@JsonSerializable(fieldRename: FieldRename.snake)
 class RoleModel extends RoleEntity {
-  const RoleModel({
-    required super.id,
-    required super.name,
-    super.description,
-    required super.permissions,
-  });
+  const RoleModel({required String id, required String name})
+    : super(id: id, name: name);
 
-  /// Crea un RoleModel desde JSON
-  factory RoleModel.fromJson(Map<String, dynamic> json) {
-    return RoleModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String?,
-      permissions:
-          (json['permissions'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
-    );
-  }
+  factory RoleModel.fromJson(Map<String, dynamic> json) =>
+      _$RoleModelFromJson(json);
 
-  /// Convierte el RoleModel a JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'permissions': permissions,
-    };
-  }
+  Map<String, dynamic> toJson() => _$RoleModelToJson(this);
 }

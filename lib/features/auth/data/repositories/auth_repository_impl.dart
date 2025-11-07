@@ -39,7 +39,6 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = result['user'] as UserModel;
       final accessToken = result['access_token'] as String;
       final refreshToken = result['refresh_token'] as String;
-      final tenantId = result['tenant_id'] as String;
 
       // Guardar en caché
       await localDataSource.cacheUser(user);
@@ -47,7 +46,6 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
-      await localDataSource.cacheTenantId(tenantId);
 
       return Right(user);
     } on ServerException catch (e) {
@@ -55,7 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } on AuthException catch (e) {
       return Left(AuthFailure(e.message));
     } on ValidationException catch (e) {
-      return Left(ValidationFailure(e.errors.toString(), e.errors));
+      return Left(ValidationFailure(e.message, e.errors ?? {}));
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
     } catch (e) {
@@ -66,16 +64,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
-      // Intentar logout remoto (no es crítico si falla)
-      if (await networkInfo.isConnected) {
-        try {
-          await remoteDataSource.logout();
-        } catch (e) {
-          // Continuar con limpieza local aunque falle el servidor
-        }
-      }
+      // Con JWT, el logout es solo del lado del cliente
+      // No necesitamos invalidar el token en el servidor
+      // El token expirará automáticamente según su tiempo de vida
 
-      // Limpiar caché local
+      // Limpiar caché local (tokens y datos del usuario)
       await localDataSource.clearAuth();
 
       return const Right(null);

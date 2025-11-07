@@ -1,3 +1,4 @@
+import 'package:logger/logger.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
@@ -23,6 +24,7 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final DioClient client;
+  final Logger _logger = Logger();
 
   AuthRemoteDataSourceImpl({required this.client});
 
@@ -38,16 +40,83 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       if (response.statusCode == 200 && response.data != null) {
+        // Imprimir la respuesta completa como String
+        _logger.d('===== RAW RESPONSE =====');
+        _logger.d(response.data.toString());
+        _logger.d('===== END RAW RESPONSE =====');
+
+        _logger.d('Login response received: ${response.data}');
+
+        // Validar que response.data sea un Map
+        if (response.data is! Map<String, dynamic>) {
+          _logger.e('Response data is not a Map: ${response.data.runtimeType}');
+          throw ServerException(
+            message: 'Formato de respuesta inválido del servidor',
+            statusCode: 200,
+          );
+        }
+
         final data = response.data as Map<String, dynamic>;
 
-        // Extraer tenant_id del user object si no está en el nivel superior
-        final tenantId = data['tenant_id'] ?? data['user']?['tenant_id'] ?? '';
+        _logger.d('Login response data keys: ${data.keys}');
+        _logger.d('User data: ${data['user']}');
+        _logger.d('User data type: ${data['user']?.runtimeType}');
+
+        // Validar que los campos requeridos existan
+        if (data['user'] == null) {
+          _logger.e('User data is null in response');
+          throw ServerException(
+            message: 'Datos de usuario no encontrados en la respuesta',
+            statusCode: 200,
+          );
+        }
+
+        if (data['access'] == null || data['refresh'] == null) {
+          _logger.e('Tokens missing in response');
+          throw ServerException(
+            message: 'Tokens de autenticación no encontrados',
+            statusCode: 200,
+          );
+        }
+
+        // Parse user con manejo de errores
+        UserModel userModel;
+        try {
+          _logger.d('Attempting to parse user model...');
+
+          // Validar que user sea un Map
+          if (data['user'] is! Map<String, dynamic>) {
+            throw ServerException(
+              message:
+                  'Datos de usuario en formato inválido: ${data['user'].runtimeType}',
+              statusCode: 200,
+            );
+          }
+
+          final userData = data['user'] as Map<String, dynamic>;
+          _logger.d('User data complete: $userData');
+          _logger.d('Role field: ${userData['role']}');
+          _logger.d('Role field type: ${userData['role']?.runtimeType}');
+          _logger.d('Role_name field: ${userData['role_name']}');
+
+          userModel = UserModel.fromJson(userData);
+          _logger.d('User model parsed successfully: ${userModel.email}');
+        } catch (e, stackTrace) {
+          _logger.e(
+            'Error parsing user model',
+            error: e,
+            stackTrace: stackTrace,
+          );
+          throw ServerException(
+            message: 'Error al parsear usuario: $e',
+            statusCode: 200,
+          );
+        }
 
         return {
-          'user': UserModel.fromJson(data['user'] as Map<String, dynamic>),
+          'user': userModel,
           'access_token': data['access'] as String,
           'refresh_token': data['refresh'] as String,
-          'tenant_id': tenantId,
         };
       } else {
         throw ServerException(
@@ -61,22 +130,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       rethrow;
     } on ValidationException {
       rethrow;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.e('Unexpected error in login', error: e, stackTrace: stackTrace);
       throw ServerException(message: 'Error de conexión: $e', statusCode: null);
     }
   }
 
   @override
   Future<void> logout() async {
+    // JWT es stateless - no necesita llamar al servidor
+    // El logout se maneja eliminando tokens del almacenamiento local
     try {
-      await client.post(ApiConstants.logout);
-    } on ServerException {
-      rethrow;
+      _logger.d('Logout: No server call needed for JWT');
+      // Si en el futuro se necesita invalidar refresh tokens en el servidor,
+      // descomentar la siguiente línea y crear el endpoint en el backend:
+      // await client.post(ApiConstants.logout);
     } catch (e) {
-      throw ServerException(
-        message: 'Error al cerrar sesión: $e',
-        statusCode: null,
-      );
+      _logger.w('Error during logout cleanup', error: e);
+      // No lanzar excepción - el logout local debe funcionar aunque falle la red
     }
   }
 

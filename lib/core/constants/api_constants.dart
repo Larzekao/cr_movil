@@ -3,14 +3,14 @@ class ApiConstants {
   static const String baseUrl = '/api';
 
   // Auth endpoints
-  static const String login = '/auth/login/';
-  static const String logout = '/auth/logout/';
-  static const String refreshToken = '/auth/token/refresh/';
-  static const String register = '/auth/register/';
+  static const String login = '/login/';
+  static const String logout = '/logout/';
+  static const String refreshToken = '/refresh/';
+  static const String register = '/register/';
 
   // User endpoints
-  static const String currentUser = '/auth/users/me/';
-  static const String users = '/auth/users/';
+  static const String currentUser = '/users/me/';
+  static const String users = '/users/';
 
   // Patients endpoints
   static const String patients = '/patients/';

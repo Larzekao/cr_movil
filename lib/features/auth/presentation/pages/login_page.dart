@@ -193,10 +193,10 @@ class _LoginPageState extends State<LoginPage> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.info.withOpacity(0.1),
+                          color: AppColors.info.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.info.withOpacity(0.3),
+                            color: AppColors.info.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Column(
@@ -227,9 +227,30 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             Text(
-                              'Contraseña: Doctor123!',
+                              'Contraseña: Admin1234',
                               style: AppTextStyles.bodySmall.copyWith(
                                 fontFamily: 'monospace',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Otras credenciales:',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'superadmin@clinidocs.com / Admin1234',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              'admin@clinica-lapaz.com / Admin1234',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
                               ),
                             ),
                           ],

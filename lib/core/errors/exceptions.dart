@@ -36,10 +36,29 @@ class AuthException implements Exception {
 }
 
 class ValidationException implements Exception {
-  final Map<String, dynamic> errors;
+  final String message;
+  final Map<String, dynamic>? errors;
 
-  ValidationException({required this.errors});
+  ValidationException({required this.message, this.errors});
 
   @override
-  String toString() => 'ValidationException: $errors';
+  String toString() => 'ValidationException: $message ${errors != null ? "- $errors" : ""}';
+}
+
+class UnauthorizedException implements Exception {
+  final String message;
+
+  UnauthorizedException({this.message = 'No autorizado. Por favor inicia sesión nuevamente.'});
+
+  @override
+  String toString() => 'UnauthorizedException: $message';
+}
+
+class NotFoundException implements Exception {
+  final String message;
+
+  NotFoundException({required this.message});
+
+  @override
+  String toString() => 'NotFoundException: $message';
 }
