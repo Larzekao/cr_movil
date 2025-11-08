@@ -9,6 +9,8 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/splash_page.dart';
 import 'features/patients/presentation/bloc/patient_bloc.dart';
 import 'features/patients/presentation/pages/patients_list_page.dart';
+import 'features/documents/presentation/bloc/document_bloc.dart';
+import 'features/documents/presentation/pages/documents_list_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +33,7 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (context) => di.sl<AuthBloc>()),
         BlocProvider(create: (context) => di.sl<PatientBloc>()),
+        BlocProvider(create: (context) => di.sl<DocumentBloc>()),
       ],
       child: MaterialApp(
         title: 'CliniDocs Mobile',
@@ -44,6 +47,8 @@ class MyApp extends StatelessWidget {
           '/splash': (context) => const SplashPage(),
           '/home': (context) => const HomePage(),
           '/patients': (context) => const PatientsListPage(),
+
+          '/documents': (context) => const DocumentsListPage(),
         },
       ),
     );

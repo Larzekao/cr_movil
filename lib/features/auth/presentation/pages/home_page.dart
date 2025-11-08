@@ -21,6 +21,8 @@ class HomePage extends StatelessWidget {
       builder: (context, state) {
         if (state is AuthAuthenticated) {
           final user = state.user;
+          // Guardar referencia al bloc para evitar problemas con contextos desactivados
+          final authBloc = context.read<AuthBloc>();
 
           return Scaffold(
             backgroundColor: AppColors.background,
@@ -28,11 +30,46 @@ class HomePage extends StatelessWidget {
               title: const Text('CliniDocs'),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: 'Cerrar Sesión',
+                  onPressed: () {
+                    // Mostrar confirmación antes de cerrar sesión
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Cerrar Sesión'),
+                        content: const Text(
+                          '¿Estás seguro que deseas cerrar sesión?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(dialogContext);
+                              authBloc.add(const AuthLogoutRequested());
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Cerrar Sesión'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             drawer: AppDrawer(
               user: user,
               onLogout: () {
-                context.read<AuthBloc>().add(const AuthLogoutRequested());
+                authBloc.add(const AuthLogoutRequested());
               },
             ),
             body: _buildDashboard(context, user),
@@ -131,9 +168,9 @@ class HomePage extends StatelessWidget {
             _buildQuickAccessCard(
               context,
               icon: Icons.medical_services_outlined,
-              title: 'Consultas',
+              title: 'Historias Clínicas',
               color: Colors.green,
-              onTap: () => _showComingSoon(context, 'Consultas'),
+              onTap: () => Navigator.pushNamed(context, '/clinical-records'),
             ),
             _buildQuickAccessCard(
               context,

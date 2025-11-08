@@ -27,6 +27,28 @@ import '../../features/patients/domain/usecases/update_patient_usecase.dart';
 import '../../features/patients/domain/usecases/delete_patient_usecase.dart';
 import '../../features/patients/presentation/bloc/patient_bloc.dart';
 
+// Features - Clinical Records
+import '../../features/clinical_records/data/datasources/clinical_record_remote_datasource.dart';
+import '../../features/clinical_records/data/repositories/clinical_record_repository_impl.dart';
+import '../../features/clinical_records/domain/repositories/clinical_record_repository.dart';
+import '../../features/clinical_records/domain/usecases/get_clinical_records_usecase.dart';
+import '../../features/clinical_records/domain/usecases/get_clinical_record_detail_usecase.dart';
+import '../../features/clinical_records/domain/usecases/create_clinical_record_usecase.dart';
+import '../../features/clinical_records/domain/usecases/update_clinical_record_usecase.dart';
+import '../../features/clinical_records/domain/usecases/delete_clinical_record_usecase.dart';
+import '../../features/clinical_records/presentation/bloc/clinical_record_bloc.dart';
+
+// Features - Documents
+import '../../features/documents/data/datasources/document_remote_datasource.dart';
+import '../../features/documents/data/repositories/document_repository_impl.dart';
+import '../../features/documents/domain/repositories/document_repository.dart';
+import '../../features/documents/domain/usecases/get_documents_usecase.dart';
+import '../../features/documents/domain/usecases/create_document_usecase.dart';
+import '../../features/documents/domain/usecases/update_document_usecase.dart';
+import '../../features/documents/domain/usecases/delete_document_usecase.dart';
+import '../../features/documents/domain/usecases/upload_document_usecase.dart';
+import '../../features/documents/presentation/bloc/document_bloc.dart';
+
 final sl = GetIt.instance;
 
 /// Inicializa todas las dependencias de la aplicación
@@ -87,6 +109,8 @@ Future<void> init() async {
 
   _initAuth();
   _initPatients();
+  _initClinicalRecords();
+  _initDocuments();
 }
 
 /// Inicializa las dependencias del feature de autenticación
@@ -210,6 +234,137 @@ void _initPatients() {
       createPatientUseCase: sl<CreatePatientUseCase>(),
       updatePatientUseCase: sl<UpdatePatientUseCase>(),
       deletePatientUseCase: sl<DeletePatientUseCase>(),
+    ),
+  );
+}
+
+/// Inicializa las dependencias del feature de historias clínicas
+///
+/// Incluye:
+/// - DataSources (Remote)
+/// - Repository
+/// - Use Cases
+/// - BLoC
+void _initClinicalRecords() {
+  // =========================================================================
+  // Data Layer
+  // =========================================================================
+
+  // DataSources
+  sl.registerLazySingleton<ClinicalRecordRemoteDataSource>(
+    () => ClinicalRecordRemoteDataSourceImpl(dioClient: sl<DioClient>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<ClinicalRecordRepository>(
+    () => ClinicalRecordRepositoryImpl(
+      remoteDataSource: sl<ClinicalRecordRemoteDataSource>(),
+      networkInfo: sl<NetworkInfo>(),
+    ),
+  );
+
+  // =========================================================================
+  // Domain Layer
+  // =========================================================================
+
+  // Use Cases
+  sl.registerLazySingleton<GetClinicalRecordsUseCase>(
+    () => GetClinicalRecordsUseCase(sl<ClinicalRecordRepository>()),
+  );
+
+  sl.registerLazySingleton<GetClinicalRecordDetailUseCase>(
+    () => GetClinicalRecordDetailUseCase(sl<ClinicalRecordRepository>()),
+  );
+
+  sl.registerLazySingleton<CreateClinicalRecordUseCase>(
+    () => CreateClinicalRecordUseCase(sl<ClinicalRecordRepository>()),
+  );
+
+  sl.registerLazySingleton<UpdateClinicalRecordUseCase>(
+    () => UpdateClinicalRecordUseCase(sl<ClinicalRecordRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteClinicalRecordUseCase>(
+    () => DeleteClinicalRecordUseCase(sl<ClinicalRecordRepository>()),
+  );
+
+  // =========================================================================
+  // Presentation Layer
+  // =========================================================================
+
+  // BLoC
+  sl.registerFactory<ClinicalRecordBloc>(
+    () => ClinicalRecordBloc(
+      getClinicalRecordsUseCase: sl<GetClinicalRecordsUseCase>(),
+      getClinicalRecordDetailUseCase: sl<GetClinicalRecordDetailUseCase>(),
+      createClinicalRecordUseCase: sl<CreateClinicalRecordUseCase>(),
+      updateClinicalRecordUseCase: sl<UpdateClinicalRecordUseCase>(),
+      deleteClinicalRecordUseCase: sl<DeleteClinicalRecordUseCase>(),
+    ),
+  );
+}
+
+/// Inicializa las dependencias del feature de documentos
+///
+/// Incluye:
+/// - DataSources (Remote)
+/// - Repository
+/// - Use Cases
+/// - BLoC
+void _initDocuments() {
+  // =========================================================================
+  // Data Layer
+  // =========================================================================
+
+  // DataSources
+  sl.registerLazySingleton<DocumentRemoteDataSource>(
+    () => DocumentRemoteDataSourceImpl(client: sl<DioClient>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<DocumentRepository>(
+    () => DocumentRepositoryImpl(
+      remoteDataSource: sl<DocumentRemoteDataSource>(),
+    ),
+  );
+
+  // =========================================================================
+  // Domain Layer
+  // =========================================================================
+
+  // Use Cases
+  sl.registerLazySingleton<GetDocumentsUseCase>(
+    () => GetDocumentsUseCase(sl<DocumentRepository>()),
+  );
+
+  sl.registerLazySingleton<CreateDocumentUseCase>(
+    () => CreateDocumentUseCase(sl<DocumentRepository>()),
+  );
+
+  sl.registerLazySingleton<UpdateDocumentUseCase>(
+    () => UpdateDocumentUseCase(sl<DocumentRepository>()),
+  );
+
+  sl.registerLazySingleton<DeleteDocumentUseCase>(
+    () => DeleteDocumentUseCase(sl<DocumentRepository>()),
+  );
+
+  sl.registerLazySingleton<UploadDocumentUseCase>(
+    () => UploadDocumentUseCase(sl<DocumentRepository>()),
+  );
+
+  // =========================================================================
+  // Presentation Layer
+  // =========================================================================
+
+  // BLoC
+  sl.registerFactory<DocumentBloc>(
+    () => DocumentBloc(
+      getDocumentsUseCase: sl<GetDocumentsUseCase>(),
+      createDocumentUseCase: sl<CreateDocumentUseCase>(),
+      updateDocumentUseCase: sl<UpdateDocumentUseCase>(),
+      deleteDocumentUseCase: sl<DeleteDocumentUseCase>(),
+      uploadDocumentUseCase: sl<UploadDocumentUseCase>(),
     ),
   );
 }

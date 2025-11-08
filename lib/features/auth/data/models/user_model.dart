@@ -10,21 +10,15 @@ class UserModel extends UserEntity {
   final RoleModel? role;
 
   const UserModel({
-    required String id,
-    required String email,
-    required String firstName,
-    required String lastName,
-    required String fullName,
+    required super.id,
+    required super.email,
+    required super.firstName,
+    required super.lastName,
+    required super.fullName,
     this.role,
-    required bool isActive,
+    required super.isActive,
   }) : super(
-         id: id,
-         email: email,
-         firstName: firstName,
-         lastName: lastName,
-         fullName: fullName,
          role: role,
-         isActive: isActive,
        );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -35,20 +29,31 @@ class UserModel extends UserEntity {
       final roleValue = json['role'];
       final roleNameValue = json['role_name'];
 
-      // Caso 1: role es un Map completo con id y name
-      if (roleValue is Map<String, dynamic>) {
-        role = RoleModel.fromJson(roleValue);
+      // Caso 1: role es null - mantener como null
+      if (roleValue == null) {
+        role = null;
       }
-      // Caso 2: role es String (UUID) y role_name existe
+      // Caso 2: role es un Map completo con id y name
+      else if (roleValue is Map<String, dynamic>) {
+        // Verificar que tenga los campos necesarios antes de parsear
+        if (roleValue.containsKey('id') && roleValue.containsKey('name')) {
+          role = RoleModel.fromJson(roleValue);
+        } else {
+          role = null;
+        }
+      }
+      // Caso 3: role es String (UUID) y role_name existe
       else if (roleValue is String && roleNameValue is String) {
         role = RoleModel(id: roleValue, name: roleNameValue);
       }
-      // Caso 3: Cualquier otro caso, role = null
+      // Caso 4: Cualquier otro caso, role = null
       else {
         role = null;
       }
     } catch (e) {
       // Si hay error parseando el role, continuar con role null
+      // ignore: avoid_print
+      // print('Error parsing role: $e');
       role = null;
     }
 
@@ -63,6 +68,9 @@ class UserModel extends UserEntity {
         isActive: json['is_active'] as bool? ?? true,
       );
     } catch (e) {
+      // ignore: avoid_print
+      // print('Error creating UserModel: $e');
+      // print('JSON: $json');
       rethrow;
     }
   }
@@ -80,8 +88,7 @@ class UserModel extends UserEntity {
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class RoleModel extends RoleEntity {
-  const RoleModel({required String id, required String name})
-    : super(id: id, name: name);
+  const RoleModel({required super.id, required super.name});
 
   factory RoleModel.fromJson(Map<String, dynamic> json) =>
       _$RoleModelFromJson(json);

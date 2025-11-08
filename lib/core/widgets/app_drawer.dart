@@ -138,6 +138,22 @@ class AppDrawer extends StatelessWidget {
       );
     }
 
+    // Historias Clínicas - disponible para médicos y administradores
+    if (RoleConstants.isMedicalStaff(roleName) ||
+        RoleConstants.isAdmin(roleName)) {
+      items.add(
+        _buildMenuItem(
+          context,
+          icon: Icons.medical_services_outlined,
+          title: 'Historias Clínicas',
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, '/clinical-records');
+          },
+        ),
+      );
+    }
+
     // Documentos - disponible para médicos y administradores
     if (RoleConstants.isMedicalStaff(roleName) ||
         RoleConstants.isAdmin(roleName)) {
@@ -148,7 +164,7 @@ class AppDrawer extends StatelessWidget {
           title: 'Documentos',
           onTap: () {
             Navigator.pop(context);
-            _showComingSoon(context, 'Documentos');
+            Navigator.pushNamed(context, '/documents');
           },
         ),
       );
@@ -226,18 +242,22 @@ class AppDrawer extends StatelessWidget {
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Cerrar Sesión'),
         content: const Text('¿Estás seguro que deseas cerrar sesión?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
+              // Cerrar el diálogo
+              Navigator.pop(dialogContext);
+              // Cerrar el drawer
               Navigator.pop(context);
-              onLogout();
+              // Ejecutar logout después de cerrar todo
+              Future.microtask(() => onLogout());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
