@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'patient_event.dart';
 import 'patient_state.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/usecases/get_patients_usecase.dart';
 import '../../domain/usecases/get_patient_detail_usecase.dart';
 import '../../domain/usecases/create_patient_usecase.dart';
@@ -40,16 +41,20 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
       page: event.page,
       pageSize: event.pageSize,
       search: event.search,
+      ordering: event.ordering,
     );
 
     result.fold(
       (failure) => emit(PatientError(failure.message)),
-      (patients) => emit(
+      (paginatedPatients) => emit(
         PatientsLoaded(
-          patients: patients,
-          hasMore: patients.length >= event.pageSize,
+          patients: paginatedPatients.results,
+          totalCount: paginatedPatients.count,
+          hasNext: paginatedPatients.hasNext,
+          hasPrevious: paginatedPatients.hasPrevious,
           currentPage: event.page,
           searchQuery: event.search,
+          ordering: event.ordering,
         ),
       ),
     );
@@ -77,10 +82,15 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
 
     final result = await createPatientUseCase(event.patientData);
 
-    result.fold(
-      (failure) => emit(PatientError(failure.message)),
-      (patient) => emit(PatientCreated(patient)),
-    );
+    result.fold((failure) {
+      if (failure is DuplicateFailure) {
+        emit(PatientDuplicateError(failure.message));
+      } else if (failure is ValidationFailure) {
+        emit(PatientError(failure.message));
+      } else {
+        emit(PatientError(failure.message));
+      }
+    }, (patient) => emit(PatientCreated(patient)));
   }
 
   Future<void> _onUpdatePatientRequested(
@@ -94,10 +104,15 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
       event.patientData,
     );
 
-    result.fold(
-      (failure) => emit(PatientError(failure.message)),
-      (patient) => emit(PatientUpdated(patient)),
-    );
+    result.fold((failure) {
+      if (failure is DuplicateFailure) {
+        emit(PatientDuplicateError(failure.message));
+      } else if (failure is ValidationFailure) {
+        emit(PatientError(failure.message));
+      } else {
+        emit(PatientError(failure.message));
+      }
+    }, (patient) => emit(PatientUpdated(patient)));
   }
 
   Future<void> _onDeletePatientRequested(
@@ -128,10 +143,12 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
 
     result.fold(
       (failure) => emit(PatientError(failure.message)),
-      (patients) => emit(
+      (paginatedPatients) => emit(
         PatientsLoaded(
-          patients: patients,
-          hasMore: patients.length >= 20,
+          patients: paginatedPatients.results,
+          totalCount: paginatedPatients.count,
+          hasNext: paginatedPatients.hasNext,
+          hasPrevious: paginatedPatients.hasPrevious,
           currentPage: 1,
           searchQuery: event.query,
         ),

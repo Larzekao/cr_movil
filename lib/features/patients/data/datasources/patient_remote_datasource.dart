@@ -5,10 +5,11 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 
 abstract class PatientRemoteDataSource {
-  Future<List<PatientModel>> getPatients({
+  Future<Map<String, dynamic>> getPatients({
     int page = 1,
     int pageSize = 10,
     String? search,
+    String? ordering,
   });
 
   Future<PatientModel> getPatientById(String id);
@@ -29,16 +30,18 @@ class PatientRemoteDataSourceImpl implements PatientRemoteDataSource {
   PatientRemoteDataSourceImpl({required this.dioClient});
 
   @override
-  Future<List<PatientModel>> getPatients({
+  Future<Map<String, dynamic>> getPatients({
     int page = 1,
     int pageSize = 10,
     String? search,
+    String? ordering,
   }) async {
     try {
       final queryParams = {
         'page': page.toString(),
         'page_size': pageSize.toString(),
         if (search != null && search.isNotEmpty) 'search': search,
+        if (ordering != null && ordering.isNotEmpty) 'ordering': ordering,
       };
 
       final response = await dioClient.get(
@@ -46,23 +49,23 @@ class PatientRemoteDataSourceImpl implements PatientRemoteDataSource {
         queryParameters: queryParams,
       );
 
-      if (response.data['results'] != null) {
-        final List<dynamic> results = response.data['results'];
-        return results.map((json) => PatientModel.fromJson(json)).toList();
-      }
-
-      return [];
+      // Retornar toda la respuesta paginada: {count, next, previous, results}
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw UnauthorizedException();
       } else if (e.response?.statusCode == 404) {
         throw NotFoundException(message: 'Pacientes no encontrados');
       } else if (e.response?.statusCode == 500) {
-        throw ServerException(message: 'Error del servidor al cargar pacientes');
+        throw ServerException(
+          message: 'Error del servidor al cargar pacientes',
+        );
       }
       throw NetworkException(message: 'Error de red: ${e.message}');
     } catch (e) {
-      throw ServerException(message: 'Error inesperado al cargar pacientes: $e');
+      throw ServerException(
+        message: 'Error inesperado al cargar pacientes: $e',
+      );
     }
   }
 
@@ -96,13 +99,32 @@ class PatientRemoteDataSourceImpl implements PatientRemoteDataSource {
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw UnauthorizedException();
+      } else if (e.response?.statusCode == 409) {
+        // Manejar error de duplicado (PATIENT_DUPLICATE)
+        final data = e.response?.data as Map<String, dynamic>?;
+        final code = data?['code'] as String?;
+        final message = data?['message'] as String?;
+
+        if (code == 'PATIENT_DUPLICATE') {
+          throw DuplicateException(
+            message:
+                message ??
+                'Ya existe un paciente con este documento de identidad',
+          );
+        }
+        throw ValidationException(
+          message: message ?? 'Conflicto al crear paciente',
+        );
       } else if (e.response?.statusCode == 400) {
-        throw ValidationException(message: 'Datos inválidos: ${e.response?.data}');
+        throw ValidationException(
+          message: 'Datos inválidos: ${e.response?.data}',
+        );
       } else if (e.response?.statusCode == 500) {
         throw ServerException(message: 'Error del servidor al crear paciente');
       }
       throw NetworkException(message: 'Error de red: ${e.message}');
     } catch (e) {
+      if (e is DuplicateException) rethrow;
       throw ServerException(message: 'Error inesperado al crear paciente: $e');
     }
   }
@@ -121,16 +143,39 @@ class PatientRemoteDataSourceImpl implements PatientRemoteDataSource {
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw UnauthorizedException();
+      } else if (e.response?.statusCode == 409) {
+        // Manejar error de duplicado (PATIENT_DUPLICATE)
+        final data = e.response?.data as Map<String, dynamic>?;
+        final code = data?['code'] as String?;
+        final message = data?['message'] as String?;
+
+        if (code == 'PATIENT_DUPLICATE') {
+          throw DuplicateException(
+            message:
+                message ??
+                'Ya existe un paciente con este documento de identidad',
+          );
+        }
+        throw ValidationException(
+          message: message ?? 'Conflicto al actualizar paciente',
+        );
       } else if (e.response?.statusCode == 404) {
         throw NotFoundException(message: 'Paciente no encontrado');
       } else if (e.response?.statusCode == 400) {
-        throw ValidationException(message: 'Datos inválidos: ${e.response?.data}');
+        throw ValidationException(
+          message: 'Datos inválidos: ${e.response?.data}',
+        );
       } else if (e.response?.statusCode == 500) {
-        throw ServerException(message: 'Error del servidor al actualizar paciente');
+        throw ServerException(
+          message: 'Error del servidor al actualizar paciente',
+        );
       }
       throw NetworkException(message: 'Error de red: ${e.message}');
     } catch (e) {
-      throw ServerException(message: 'Error inesperado al actualizar paciente: $e');
+      if (e is DuplicateException) rethrow;
+      throw ServerException(
+        message: 'Error inesperado al actualizar paciente: $e',
+      );
     }
   }
 
@@ -144,11 +189,15 @@ class PatientRemoteDataSourceImpl implements PatientRemoteDataSource {
       } else if (e.response?.statusCode == 404) {
         throw NotFoundException(message: 'Paciente no encontrado');
       } else if (e.response?.statusCode == 500) {
-        throw ServerException(message: 'Error del servidor al eliminar paciente');
+        throw ServerException(
+          message: 'Error del servidor al eliminar paciente',
+        );
       }
       throw NetworkException(message: 'Error de red: ${e.message}');
     } catch (e) {
-      throw ServerException(message: 'Error inesperado al eliminar paciente: $e');
+      throw ServerException(
+        message: 'Error inesperado al eliminar paciente: $e',
+      );
     }
   }
 }

@@ -38,3 +38,7 @@ class ValidationFailure extends Failure {
   @override
   List<Object> get props => [message, errors];
 }
+
+class DuplicateFailure extends Failure {
+  const DuplicateFailure(super.message);
+}

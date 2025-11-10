@@ -25,14 +25,14 @@ class _PatientFormPageState extends State<PatientFormPage> {
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _addressController;
+  late final TextEditingController _cityController;
   late final TextEditingController _emergencyNameController;
+  late final TextEditingController _emergencyRelationshipController;
   late final TextEditingController _emergencyPhoneController;
-  late final TextEditingController _bloodTypeController;
-  late final TextEditingController _allergiesController;
-  late final TextEditingController _chronicConditionsController;
 
   DateTime? _dateOfBirth;
   String _gender = 'M';
+  String _identityDocumentType = 'CI';
 
   bool get isEditing => widget.patient != null;
 
@@ -55,24 +55,23 @@ class _PatientFormPageState extends State<PatientFormPage> {
     _addressController = TextEditingController(
       text: widget.patient?.address ?? '',
     );
+    _cityController = TextEditingController(text: widget.patient?.city ?? '');
+
+    // Emergency contact - extraer del Map
+    final emergencyContact = widget.patient?.emergencyContact;
     _emergencyNameController = TextEditingController(
-      text: widget.patient?.emergencyContactName ?? '',
+      text: emergencyContact?['name']?.toString() ?? '',
+    );
+    _emergencyRelationshipController = TextEditingController(
+      text: emergencyContact?['relationship']?.toString() ?? '',
     );
     _emergencyPhoneController = TextEditingController(
-      text: widget.patient?.emergencyContactPhone ?? '',
-    );
-    _bloodTypeController = TextEditingController(
-      text: widget.patient?.bloodType ?? '',
-    );
-    _allergiesController = TextEditingController(
-      text: widget.patient?.allergies ?? '',
-    );
-    _chronicConditionsController = TextEditingController(
-      text: widget.patient?.chronicConditions ?? '',
+      text: emergencyContact?['phone']?.toString() ?? '',
     );
 
     _dateOfBirth = widget.patient?.dateOfBirth;
     _gender = widget.patient?.gender ?? 'M';
+    _identityDocumentType = widget.patient?.identityDocumentType ?? 'CI';
   }
 
   @override
@@ -86,24 +85,47 @@ class _PatientFormPageState extends State<PatientFormPage> {
           if (state is PatientCreated) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Paciente creado exitosamente'),
+                content: Text('✅ Paciente creado exitosamente'),
                 backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           } else if (state is PatientUpdated) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Paciente actualizado exitosamente'),
+                content: Text('✅ Paciente actualizado exitosamente'),
                 backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true);
+          } else if (state is PatientDuplicateError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.warning_amber, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(state.message)),
+                  ],
+                ),
+                backgroundColor: Colors.orange[800],
+                duration: const Duration(seconds: 5),
+              ),
+            );
           } else if (state is PatientError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(state.message)),
+                  ],
+                ),
                 backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
               ),
             );
           }
@@ -120,9 +142,52 @@ class _PatientFormPageState extends State<PatientFormPage> {
                 children: [
                   // Información personal
                   _buildSectionTitle('Información Personal'),
+
+                  // Tipo de documento
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.credit_card, color: Colors.grey),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _identityDocumentType,
+                            decoration: const InputDecoration(
+                              labelText: 'Tipo de Documento',
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'CI',
+                                child: Text('Cédula de Identidad'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Pasaporte',
+                                child: Text('Pasaporte'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'DNI',
+                                child: Text('DNI'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'RUT',
+                                child: Text('RUT'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _identityDocumentType = value ?? 'CI';
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   _buildTextField(
                     controller: _identityDocumentController,
-                    label: 'Documento de Identidad',
+                    label: 'Número de Documento',
                     icon: Icons.badge,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -236,44 +301,32 @@ class _PatientFormPageState extends State<PatientFormPage> {
                     icon: Icons.location_on,
                     maxLines: 2,
                   ),
+                  _buildTextField(
+                    controller: _cityController,
+                    label: 'Ciudad (opcional)',
+                    icon: Icons.location_city,
+                  ),
 
                   const SizedBox(height: 24),
 
                   // Contacto de emergencia
-                  _buildSectionTitle('Contacto de Emergencia'),
+                  _buildSectionTitle('Contacto de Emergencia (opcional)'),
                   _buildTextField(
                     controller: _emergencyNameController,
-                    label: 'Nombre (opcional)',
+                    label: 'Nombre',
                     icon: Icons.person_outline,
                   ),
                   _buildTextField(
+                    controller: _emergencyRelationshipController,
+                    label: 'Relación',
+                    icon: Icons.family_restroom,
+                    hint: 'Ej: Madre, Padre, Hermano/a, Esposo/a',
+                  ),
+                  _buildTextField(
                     controller: _emergencyPhoneController,
-                    label: 'Teléfono (opcional)',
+                    label: 'Teléfono',
                     icon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Información médica
-                  _buildSectionTitle('Información Médica'),
-                  _buildTextField(
-                    controller: _bloodTypeController,
-                    label: 'Tipo de Sangre (opcional)',
-                    icon: Icons.bloodtype,
-                    hint: 'Ej: O+, A-, AB+',
-                  ),
-                  _buildTextField(
-                    controller: _allergiesController,
-                    label: 'Alergias (opcional)',
-                    icon: Icons.warning_amber,
-                    maxLines: 3,
-                  ),
-                  _buildTextField(
-                    controller: _chronicConditionsController,
-                    label: 'Condiciones Crónicas (opcional)',
-                    icon: Icons.health_and_safety,
-                    maxLines: 3,
                   ),
 
                   const SizedBox(height: 32),
@@ -372,7 +425,8 @@ class _PatientFormPageState extends State<PatientFormPage> {
 
   void _savePatient() {
     if (_formKey.currentState!.validate() && _dateOfBirth != null) {
-      final patientData = {
+      final Map<String, dynamic> patientData = {
+        'identity_document_type': _identityDocumentType,
         'identity_document': _identityDocumentController.text,
         'first_name': _firstNameController.text,
         'last_name': _lastNameController.text,
@@ -382,17 +436,19 @@ class _PatientFormPageState extends State<PatientFormPage> {
         if (_emailController.text.isNotEmpty) 'email': _emailController.text,
         if (_addressController.text.isNotEmpty)
           'address': _addressController.text,
-        if (_emergencyNameController.text.isNotEmpty)
-          'emergency_contact_name': _emergencyNameController.text,
-        if (_emergencyPhoneController.text.isNotEmpty)
-          'emergency_contact_phone': _emergencyPhoneController.text,
-        if (_bloodTypeController.text.isNotEmpty)
-          'blood_type': _bloodTypeController.text,
-        if (_allergiesController.text.isNotEmpty)
-          'allergies': _allergiesController.text,
-        if (_chronicConditionsController.text.isNotEmpty)
-          'chronic_conditions': _chronicConditionsController.text,
+        if (_cityController.text.isNotEmpty) 'city': _cityController.text,
       };
+
+      // Agregar emergency_contact solo si hay datos
+      if (_emergencyNameController.text.isNotEmpty ||
+          _emergencyRelationshipController.text.isNotEmpty ||
+          _emergencyPhoneController.text.isNotEmpty) {
+        patientData['emergency_contact'] = {
+          'name': _emergencyNameController.text,
+          'relationship': _emergencyRelationshipController.text,
+          'phone': _emergencyPhoneController.text,
+        };
+      }
 
       if (isEditing) {
         context.read<PatientBloc>().add(
@@ -419,11 +475,10 @@ class _PatientFormPageState extends State<PatientFormPage> {
     _phoneController.dispose();
     _emailController.dispose();
     _addressController.dispose();
+    _cityController.dispose();
     _emergencyNameController.dispose();
+    _emergencyRelationshipController.dispose();
     _emergencyPhoneController.dispose();
-    _bloodTypeController.dispose();
-    _allergiesController.dispose();
-    _chronicConditionsController.dispose();
     super.dispose();
   }
 }

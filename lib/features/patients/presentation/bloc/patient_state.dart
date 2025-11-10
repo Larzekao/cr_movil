@@ -17,31 +17,51 @@ class PatientLoading extends PatientState {}
 // Lista de pacientes cargada
 class PatientsLoaded extends PatientState {
   final List<PatientEntity> patients;
-  final bool hasMore;
+  final int totalCount;
+  final bool hasNext;
+  final bool hasPrevious;
   final int currentPage;
   final String? searchQuery;
+  final String? ordering;
 
   const PatientsLoaded({
     required this.patients,
-    this.hasMore = false,
+    required this.totalCount,
+    this.hasNext = false,
+    this.hasPrevious = false,
     this.currentPage = 1,
     this.searchQuery,
+    this.ordering,
   });
 
   @override
-  List<Object?> get props => [patients, hasMore, currentPage, searchQuery];
+  List<Object?> get props => [
+    patients,
+    totalCount,
+    hasNext,
+    hasPrevious,
+    currentPage,
+    searchQuery,
+    ordering,
+  ];
 
   PatientsLoaded copyWith({
     List<PatientEntity>? patients,
-    bool? hasMore,
+    int? totalCount,
+    bool? hasNext,
+    bool? hasPrevious,
     int? currentPage,
     String? searchQuery,
+    String? ordering,
   }) {
     return PatientsLoaded(
       patients: patients ?? this.patients,
-      hasMore: hasMore ?? this.hasMore,
+      totalCount: totalCount ?? this.totalCount,
+      hasNext: hasNext ?? this.hasNext,
+      hasPrevious: hasPrevious ?? this.hasPrevious,
       currentPage: currentPage ?? this.currentPage,
       searchQuery: searchQuery ?? this.searchQuery,
+      ordering: ordering ?? this.ordering,
     );
   }
 }
@@ -91,6 +111,16 @@ class PatientError extends PatientState {
   final String message;
 
   const PatientError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+// Error de duplicado (409)
+class PatientDuplicateError extends PatientState {
+  final String message;
+
+  const PatientDuplicateError(this.message);
 
   @override
   List<Object> get props => [message];

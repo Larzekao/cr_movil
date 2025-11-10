@@ -3,20 +3,20 @@ import '../../domain/entities/patient_entity.dart';
 class PatientModel extends PatientEntity {
   const PatientModel({
     required super.id,
+    required super.identityDocumentType,
     required super.identityDocument,
     required super.firstName,
     required super.lastName,
     required super.fullName,
     required super.dateOfBirth,
+    required super.age,
     required super.gender,
     required super.phone,
     super.email,
     super.address,
-    super.emergencyContactName,
-    super.emergencyContactPhone,
-    super.bloodType,
-    super.allergies,
-    super.chronicConditions,
+    super.city,
+    super.emergencyContact,
+    super.createdByName,
     required super.createdAt,
     super.updatedAt,
   });
@@ -24,6 +24,7 @@ class PatientModel extends PatientEntity {
   factory PatientModel.fromJson(Map<String, dynamic> json) {
     return PatientModel(
       id: json['id']?.toString() ?? '',
+      identityDocumentType: json['identity_document_type']?.toString() ?? 'CI',
       identityDocument: json['identity_document']?.toString() ?? '',
       firstName: json['first_name']?.toString() ?? '',
       lastName: json['last_name']?.toString() ?? '',
@@ -31,15 +32,14 @@ class PatientModel extends PatientEntity {
       dateOfBirth: json['date_of_birth'] != null
           ? DateTime.parse(json['date_of_birth'])
           : DateTime.now(),
+      age: json['age'] ?? 0,
       gender: json['gender']?.toString() ?? 'M',
       phone: json['phone']?.toString() ?? '',
       email: json['email']?.toString(),
       address: json['address']?.toString(),
-      emergencyContactName: json['emergency_contact_name']?.toString(),
-      emergencyContactPhone: json['emergency_contact_phone']?.toString(),
-      bloodType: json['blood_type']?.toString(),
-      allergies: json['allergies']?.toString(),
-      chronicConditions: json['chronic_conditions']?.toString(),
+      city: json['city']?.toString(),
+      emergencyContact: json['emergency_contact'] as Map<String, dynamic>?,
+      createdByName: json['created_by_name']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
@@ -51,43 +51,37 @@ class PatientModel extends PatientEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'identity_document_type': identityDocumentType,
       'identity_document': identityDocument,
       'first_name': firstName,
       'last_name': lastName,
-      'full_name': fullName,
       'date_of_birth': dateOfBirth.toIso8601String().split('T')[0],
       'gender': gender,
       'phone': phone,
-      'email': email,
-      'address': address,
-      'emergency_contact_name': emergencyContactName,
-      'emergency_contact_phone': emergencyContactPhone,
-      'blood_type': bloodType,
-      'allergies': allergies,
-      'chronic_conditions': chronicConditions,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      if (email != null) 'email': email,
+      if (address != null) 'address': address,
+      if (city != null) 'city': city,
+      if (emergencyContact != null) 'emergency_contact': emergencyContact,
     };
   }
 
   PatientEntity toEntity() {
     return PatientEntity(
       id: id,
+      identityDocumentType: identityDocumentType,
       identityDocument: identityDocument,
       firstName: firstName,
       lastName: lastName,
       fullName: fullName,
       dateOfBirth: dateOfBirth,
+      age: age,
       gender: gender,
       phone: phone,
       email: email,
       address: address,
-      emergencyContactName: emergencyContactName,
-      emergencyContactPhone: emergencyContactPhone,
-      bloodType: bloodType,
-      allergies: allergies,
-      chronicConditions: chronicConditions,
+      city: city,
+      emergencyContact: emergencyContact,
+      createdByName: createdByName,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

@@ -174,23 +174,29 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             const SizedBox(height: 24),
 
             // Contacto de emergencia
-            if (patient.emergencyContactName != null ||
-                patient.emergencyContactPhone != null)
+            if (patient.emergencyContact != null &&
+                patient.emergencyContact!.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSectionTitle('Contacto de Emergencia'),
                   _buildInfoCard([
-                    if (patient.emergencyContactName != null)
+                    if (patient.emergencyContact!['name'] != null)
                       _buildInfoRow(
                         'Nombre',
-                        patient.emergencyContactName!,
+                        patient.emergencyContact!['name'].toString(),
                         Icons.person_outline,
                       ),
-                    if (patient.emergencyContactPhone != null)
+                    if (patient.emergencyContact!['relationship'] != null)
+                      _buildInfoRow(
+                        'Relación',
+                        patient.emergencyContact!['relationship'].toString(),
+                        Icons.family_restroom,
+                      ),
+                    if (patient.emergencyContact!['phone'] != null)
                       _buildInfoRow(
                         'Teléfono',
-                        patient.emergencyContactPhone!,
+                        patient.emergencyContact!['phone'].toString(),
                         Icons.phone_outlined,
                       ),
                   ]),
@@ -198,30 +204,22 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                 ],
               ),
 
-            // Información médica
-            _buildSectionTitle('Información Médica'),
-            _buildInfoCard([
-              if (patient.bloodType != null)
-                _buildInfoRow(
-                  'Tipo de Sangre',
-                  patient.bloodType!,
-                  Icons.bloodtype,
-                ),
-              if (patient.allergies != null)
-                _buildInfoRow(
-                  'Alergias',
-                  patient.allergies!,
-                  Icons.warning_amber,
-                ),
-              if (patient.chronicConditions != null)
-                _buildInfoRow(
-                  'Condiciones Crónicas',
-                  patient.chronicConditions!,
-                  Icons.health_and_safety,
-                ),
-            ]),
-
-            const SizedBox(height: 24),
+            // Información del registro
+            if (patient.createdByName != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Información del Registro'),
+                  _buildInfoCard([
+                    _buildInfoRow(
+                      'Creado por',
+                      patient.createdByName!,
+                      Icons.person,
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+                ],
+              ),
 
             // Fechas
             _buildSectionTitle('Registro'),

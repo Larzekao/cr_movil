@@ -42,13 +42,16 @@ class ValidationException implements Exception {
   ValidationException({required this.message, this.errors});
 
   @override
-  String toString() => 'ValidationException: $message ${errors != null ? "- $errors" : ""}';
+  String toString() =>
+      'ValidationException: $message ${errors != null ? "- $errors" : ""}';
 }
 
 class UnauthorizedException implements Exception {
   final String message;
 
-  UnauthorizedException({this.message = 'No autorizado. Por favor inicia sesión nuevamente.'});
+  UnauthorizedException({
+    this.message = 'No autorizado. Por favor inicia sesión nuevamente.',
+  });
 
   @override
   String toString() => 'UnauthorizedException: $message';
@@ -61,4 +64,13 @@ class NotFoundException implements Exception {
 
   @override
   String toString() => 'NotFoundException: $message';
+}
+
+class DuplicateException implements Exception {
+  final String message;
+
+  DuplicateException({required this.message});
+
+  @override
+  String toString() => 'DuplicateException: $message';
 }

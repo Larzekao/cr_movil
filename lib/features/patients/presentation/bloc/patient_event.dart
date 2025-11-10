@@ -12,11 +12,17 @@ class GetPatientsRequested extends PatientEvent {
   final int page;
   final int pageSize;
   final String? search;
+  final String? ordering; // e.g., 'first_name', '-created_at'
 
-  const GetPatientsRequested({this.page = 1, this.pageSize = 10, this.search});
+  const GetPatientsRequested({
+    this.page = 1,
+    this.pageSize = 10,
+    this.search,
+    this.ordering,
+  });
 
   @override
-  List<Object?> get props => [page, pageSize, search];
+  List<Object?> get props => [page, pageSize, search, ordering];
 }
 
 // Cargar detalle de un paciente
