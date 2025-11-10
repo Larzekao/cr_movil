@@ -11,6 +11,10 @@ import 'features/patients/presentation/bloc/patient_bloc.dart';
 import 'features/patients/presentation/pages/patients_list_page.dart';
 import 'features/documents/presentation/bloc/document_bloc.dart';
 import 'features/documents/presentation/pages/documents_list_page.dart';
+import 'features/clinical_records/presentation/bloc/clinical_record_bloc.dart';
+import 'features/clinical_records/presentation/pages/clinical_records_list_page.dart';
+import 'features/clinical_records/presentation/pages/clinical_record_detail_page.dart';
+import 'features/clinical_records/presentation/pages/clinical_record_form_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +38,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => di.sl<AuthBloc>()),
         BlocProvider(create: (context) => di.sl<PatientBloc>()),
         BlocProvider(create: (context) => di.sl<DocumentBloc>()),
+        BlocProvider(create: (context) => di.sl<ClinicalRecordBloc>()),
       ],
       child: MaterialApp(
         title: 'CliniDocs Mobile',
@@ -47,8 +52,33 @@ class MyApp extends StatelessWidget {
           '/splash': (context) => const SplashPage(),
           '/home': (context) => const HomePage(),
           '/patients': (context) => const PatientsListPage(),
-
           '/documents': (context) => const DocumentsListPage(),
+          '/clinical-records': (context) => const ClinicalRecordsListPage(),
+        },
+        onGenerateRoute: (settings) {
+          // Rutas con parámetros
+          if (settings.name == '/clinical-record-detail') {
+            final clinicalRecordId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => ClinicalRecordDetailPage(
+                clinicalRecordId: clinicalRecordId,
+              ),
+            );
+          }
+          if (settings.name == '/clinical-record-create') {
+            return MaterialPageRoute(
+              builder: (context) => const ClinicalRecordFormPage(),
+            );
+          }
+          if (settings.name == '/clinical-record-edit') {
+            final clinicalRecordId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => ClinicalRecordFormPage(
+                clinicalRecordId: clinicalRecordId,
+              ),
+            );
+          }
+          return null;
         },
       ),
     );

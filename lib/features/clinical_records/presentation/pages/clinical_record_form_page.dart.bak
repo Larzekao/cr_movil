@@ -1,0 +1,695 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/clinical_record_entity.dart';
+import '../bloc/clinical_record_bloc.dart';
+import '../../../patients/presentation/bloc/patient_bloc.dart';
+import '../../../patients/domain/entities/patient_entity.dart';
+import '../../../../core/widgets/loading_widget.dart';
+import '../../../../core/widgets/custom_text_field.dart';
+import '../../../../core/widgets/custom_button.dart';
+
+class ClinicalRecordFormPage extends StatefulWidget {
+  final String? clinicalRecordId; // null = crear, not null = editar
+
+  const ClinicalRecordFormPage({
+    Key? key,
+    this.clinicalRecordId,
+  }) : super(key: key);
+
+  @override
+  State<ClinicalRecordFormPage> createState() => _ClinicalRecordFormPageState();
+}
+
+class _ClinicalRecordFormPageState extends State<ClinicalRecordFormPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers
+  final _bloodTypeController = TextEditingController();
+  final _familyHistoryController = TextEditingController();
+  final _socialHistoryController = TextEditingController();
+
+  // Paciente seleccionado
+  PatientEntity? _selectedPatient;
+
+  // Listas dinámicas
+  final List<_AllergyData> _allergies = [];
+  final List<String> _chronicConditions = [];
+  final List<_MedicationData> _medications = [];
+
+  bool _isLoading = false;
+  bool _isEditMode = false;
+  ClinicalRecordEntity? _currentRecord;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditMode = widget.clinicalRecordId != null;
+
+    // Si es modo edición, cargar la historia clínica
+    if (_isEditMode) {
+      context.read<ClinicalRecordBloc>().add(
+            GetClinicalRecordDetailEvent(widget.clinicalRecordId!),
+          );
+    } else {
+      // Si es creación, cargar lista de pacientes
+      context.read<PatientBloc>().add(GetPatientsEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    _bloodTypeController.dispose();
+    _familyHistoryController.dispose();
+    _socialHistoryController.dispose();
+    super.dispose();
+  }
+
+  void _loadRecordData(ClinicalRecordEntity record) {
+    setState(() {
+      _currentRecord = record;
+      _bloodTypeController.text = record.bloodType ?? '';
+      _familyHistoryController.text = record.familyHistory ?? '';
+      _socialHistoryController.text = record.socialHistory ?? '';
+
+      // Cargar alergias
+      _allergies.clear();
+      for (var allergy in record.allergies) {
+        _allergies.add(_AllergyData(
+          allergen: allergy.allergen,
+          severity: allergy.severity,
+          reaction: allergy.reaction,
+        ));
+      }
+
+      // Cargar condiciones crónicas
+      _chronicConditions.clear();
+      _chronicConditions.addAll(record.chronicConditions);
+
+      // Cargar medicamentos
+      _medications.clear();
+      for (var medication in record.medications) {
+        _medications.add(_MedicationData(
+          name: medication.name,
+          dose: medication.dose,
+          frequency: medication.frequency,
+        ));
+      }
+    });
+  }
+
+  void _saveForm() {
+    if (_formKey.currentState!.validate()) {
+      if (!_isEditMode && _selectedPatient == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor seleccione un paciente'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final data = {
+        'patient': _isEditMode ? _currentRecord!.patientId : _selectedPatient!.id,
+        'blood_type': _bloodTypeController.text.trim().isEmpty
+            ? null
+            : _bloodTypeController.text.trim(),
+        'allergies': _allergies.map((a) => {
+          'allergen': a.allergen,
+          'severity': a.severity,
+          'reaction': a.reaction,
+        }).toList(),
+        'chronic_conditions': _chronicConditions,
+        'medications': _medications.map((m) => {
+          'name': m.name,
+          'dose': m.dose,
+          'frequency': m.frequency,
+        }).toList(),
+        'family_history': _familyHistoryController.text.trim().isEmpty
+            ? null
+            : _familyHistoryController.text.trim(),
+        'social_history': _socialHistoryController.text.trim().isEmpty
+            ? null
+            : _socialHistoryController.text.trim(),
+      };
+
+      if (_isEditMode) {
+        context.read<ClinicalRecordBloc>().add(
+              UpdateClinicalRecordEvent(
+                id: widget.clinicalRecordId!,
+                data: data,
+              ),
+            );
+      } else {
+        context.read<ClinicalRecordBloc>().add(
+              CreateClinicalRecordEvent(data),
+            );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isEditMode
+            ? 'Editar Historia Clínica'
+            : 'Nueva Historia Clínica'),
+      ),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<ClinicalRecordBloc, ClinicalRecordState>(
+            listener: (context, state) {
+              if (state is ClinicalRecordLoading) {
+                setState(() => _isLoading = true);
+              } else if (state is ClinicalRecordDetailLoaded) {
+                setState(() => _isLoading = false);
+                _loadRecordData(state.record);
+              } else if (state is ClinicalRecordCreated) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Historia clínica creada exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              } else if (state is ClinicalRecordUpdated) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Historia clínica actualizada exitosamente'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              } else if (state is ClinicalRecordError) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+        child: _isLoading
+            ? const LoadingWidget()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Selector de paciente (solo en modo creación)
+                      if (!_isEditMode) _buildPatientSelector(),
+
+                      const SizedBox(height: 16),
+
+                      // Información del paciente (en modo edición)
+                      if (_isEditMode && _currentRecord?.patientInfo != null)
+                        _buildPatientInfo(),
+
+                      const SizedBox(height: 16),
+
+                      // Tipo de sangre
+                      CustomTextField(
+                        controller: _bloodTypeController,
+                        labelText: 'Tipo de Sangre',
+                        hintText: 'Ej: O+, A-, etc.',
+                        prefixIcon: Icons.bloodtype,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Alergias
+                      _buildSection(
+                        title: 'Alergias',
+                        icon: Icons.warning_amber,
+                        onAdd: _addAllergy,
+                        children: _allergies.isEmpty
+                            ? [const Text('No hay alergias registradas')]
+                            : _allergies.asMap().entries.map((entry) {
+                                return _buildAllergyItem(entry.key, entry.value);
+                              }).toList(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Condiciones crónicas
+                      _buildSection(
+                        title: 'Condiciones Crónicas',
+                        icon: Icons.health_and_safety,
+                        onAdd: _addChronicCondition,
+                        children: _chronicConditions.isEmpty
+                            ? [const Text('No hay condiciones crónicas registradas')]
+                            : _chronicConditions.asMap().entries.map((entry) {
+                                return _buildChronicConditionItem(
+                                  entry.key,
+                                  entry.value,
+                                );
+                              }).toList(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Medicamentos
+                      _buildSection(
+                        title: 'Medicamentos Actuales',
+                        icon: Icons.medication,
+                        onAdd: _addMedication,
+                        children: _medications.isEmpty
+                            ? [const Text('No hay medicamentos registrados')]
+                            : _medications.asMap().entries.map((entry) {
+                                return _buildMedicationItem(entry.key, entry.value);
+                              }).toList(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Historial familiar
+                      CustomTextField(
+                        controller: _familyHistoryController,
+                        labelText: 'Historial Familiar',
+                        hintText: 'Enfermedades hereditarias, antecedentes...',
+                        prefixIcon: Icons.family_restroom,
+                        maxLines: 4,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Historial social
+                      CustomTextField(
+                        controller: _socialHistoryController,
+                        labelText: 'Historial Social',
+                        hintText: 'Estilo de vida, hábitos, ocupación...',
+                        prefixIcon: Icons.people,
+                        maxLines: 4,
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Botón de guardar
+                      CustomButton(
+                        text: _isEditMode ? 'Actualizar' : 'Crear Historia Clínica',
+                        onPressed: _saveForm,
+                        isLoading: _isLoading,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPatientSelector() {
+    return BlocBuilder<PatientBloc, PatientState>(
+      builder: (context, state) {
+        if (state is PatientsLoaded) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Seleccionar Paciente',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<PatientEntity>(
+                    value: _selectedPatient,
+                    decoration: const InputDecoration(
+                      hintText: 'Seleccione un paciente',
+                      prefixIcon: Icon(Icons.person),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: state.patients.map((patient) {
+                      return DropdownMenuItem(
+                        value: patient,
+                        child: Text(patient.fullName),
+                      );
+                    }).toList(),
+                    onChanged: (patient) {
+                      setState(() => _selectedPatient = patient);
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Por favor seleccione un paciente';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildPatientInfo() {
+    final patient = _currentRecord!.patientInfo!;
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.person),
+        title: Text(patient.fullName),
+        subtitle: Text('ID: ${patient.identification}'),
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required IconData icon,
+    required VoidCallback onAdd,
+    required List<Widget> children,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: Theme.of(context).primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle),
+                  color: Theme.of(context).primaryColor,
+                  onPressed: onAdd,
+                ),
+              ],
+            ),
+            const Divider(),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllergyItem(int index, _AllergyData allergy) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(allergy.allergen),
+        subtitle: Text('${allergy.severity} - ${allergy.reaction}'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            setState(() => _allergies.removeAt(index));
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChronicConditionItem(int index, String condition) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(condition),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            setState(() => _chronicConditions.removeAt(index));
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMedicationItem(int index, _MedicationData medication) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(medication.name),
+        subtitle: Text('${medication.dose} - ${medication.frequency}'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            setState(() => _medications.removeAt(index));
+          },
+        ),
+      ),
+    );
+  }
+
+  void _addAllergy() {
+    showDialog(
+      context: context,
+      builder: (context) => _AllergyDialog(
+        onAdd: (allergen, severity, reaction) {
+          setState(() {
+            _allergies.add(_AllergyData(
+              allergen: allergen,
+              severity: severity,
+              reaction: reaction,
+            ));
+          });
+        },
+      ),
+    );
+  }
+
+  void _addChronicCondition() {
+    showDialog(
+      context: context,
+      builder: (context) => _ChronicConditionDialog(
+        onAdd: (condition) {
+          setState(() => _chronicConditions.add(condition));
+        },
+      ),
+    );
+  }
+
+  void _addMedication() {
+    showDialog(
+      context: context,
+      builder: (context) => _MedicationDialog(
+        onAdd: (name, dose, frequency) {
+          setState(() {
+            _medications.add(_MedicationData(
+              name: name,
+              dose: dose,
+              frequency: frequency,
+            ));
+          });
+        },
+      ),
+    );
+  }
+}
+
+// Clases auxiliares
+class _AllergyData {
+  final String allergen;
+  final String severity;
+  final String reaction;
+
+  _AllergyData({
+    required this.allergen,
+    required this.severity,
+    required this.reaction,
+  });
+}
+
+class _MedicationData {
+  final String name;
+  final String dose;
+  final String frequency;
+
+  _MedicationData({
+    required this.name,
+    required this.dose,
+    required this.frequency,
+  });
+}
+
+// Diálogos
+class _AllergyDialog extends StatefulWidget {
+  final Function(String, String, String) onAdd;
+
+  const _AllergyDialog({required this.onAdd});
+
+  @override
+  State<_AllergyDialog> createState() => _AllergyDialogState();
+}
+
+class _AllergyDialogState extends State<_AllergyDialog> {
+  final _allergenController = TextEditingController();
+  final _reactionController = TextEditingController();
+  String _severity = 'Baja';
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Agregar Alergia'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _allergenController,
+            decoration: const InputDecoration(labelText: 'Alérgeno'),
+          ),
+          DropdownButtonFormField<String>(
+            value: _severity,
+            decoration: const InputDecoration(labelText: 'Severidad'),
+            items: ['Baja', 'Media', 'Alta'].map((s) {
+              return DropdownMenuItem(value: s, child: Text(s));
+            }).toList(),
+            onChanged: (value) => setState(() => _severity = value!),
+          ),
+          TextField(
+            controller: _reactionController,
+            decoration: const InputDecoration(labelText: 'Reacción'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_allergenController.text.isNotEmpty &&
+                _reactionController.text.isNotEmpty) {
+              widget.onAdd(
+                _allergenController.text,
+                _severity,
+                _reactionController.text,
+              );
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('Agregar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChronicConditionDialog extends StatefulWidget {
+  final Function(String) onAdd;
+
+  const _ChronicConditionDialog({required this.onAdd});
+
+  @override
+  State<_ChronicConditionDialog> createState() =>
+      _ChronicConditionDialogState();
+}
+
+class _ChronicConditionDialogState extends State<_ChronicConditionDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Agregar Condición Crónica'),
+      content: TextField(
+        controller: _controller,
+        decoration: const InputDecoration(labelText: 'Condición'),
+        maxLines: 2,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_controller.text.isNotEmpty) {
+              widget.onAdd(_controller.text);
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('Agregar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _MedicationDialog extends StatefulWidget {
+  final Function(String, String, String) onAdd;
+
+  const _MedicationDialog({required this.onAdd});
+
+  @override
+  State<_MedicationDialog> createState() => _MedicationDialogState();
+}
+
+class _MedicationDialogState extends State<_MedicationDialog> {
+  final _nameController = TextEditingController();
+  final _doseController = TextEditingController();
+  final _frequencyController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Agregar Medicamento'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Nombre'),
+          ),
+          TextField(
+            controller: _doseController,
+            decoration: const InputDecoration(labelText: 'Dosis'),
+          ),
+          TextField(
+            controller: _frequencyController,
+            decoration: const InputDecoration(labelText: 'Frecuencia'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_nameController.text.isNotEmpty &&
+                _doseController.text.isNotEmpty &&
+                _frequencyController.text.isNotEmpty) {
+              widget.onAdd(
+                _nameController.text,
+                _doseController.text,
+                _frequencyController.text,
+              );
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('Agregar'),
+        ),
+      ],
+    );
+  }
+}
