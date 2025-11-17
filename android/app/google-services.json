@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "247182513768",
+    "project_id": "clinicrecords-4f581",
+    "storage_bucket": "clinicrecords-4f581.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247182513768:android:683eac0b70e0896afacddd",
+        "android_client_info": {
+          "package_name": "com.clinidocs.clinidocs_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFOI8cT-Y5RjF1l7tSTkHbvRm4lsk4xkM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
