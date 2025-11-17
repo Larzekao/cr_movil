@@ -43,6 +43,7 @@ import '../../features/documents/data/datasources/document_remote_datasource.dar
 import '../../features/documents/data/repositories/document_repository_impl.dart';
 import '../../features/documents/domain/repositories/document_repository.dart';
 import '../../features/documents/domain/usecases/get_documents_usecase.dart';
+import '../../features/documents/domain/usecases/get_document_by_id_usecase.dart';
 import '../../features/documents/domain/usecases/create_document_usecase.dart';
 import '../../features/documents/domain/usecases/update_document_usecase.dart';
 import '../../features/documents/domain/usecases/delete_document_usecase.dart';
@@ -337,6 +338,10 @@ void _initDocuments() {
     () => GetDocumentsUseCase(sl<DocumentRepository>()),
   );
 
+  sl.registerLazySingleton<GetDocumentByIdUseCase>(
+    () => GetDocumentByIdUseCase(sl<DocumentRepository>()),
+  );
+
   sl.registerLazySingleton<CreateDocumentUseCase>(
     () => CreateDocumentUseCase(sl<DocumentRepository>()),
   );
@@ -361,6 +366,7 @@ void _initDocuments() {
   sl.registerFactory<DocumentBloc>(
     () => DocumentBloc(
       getDocumentsUseCase: sl<GetDocumentsUseCase>(),
+      getDocumentByIdUseCase: sl<GetDocumentByIdUseCase>(),
       createDocumentUseCase: sl<CreateDocumentUseCase>(),
       updateDocumentUseCase: sl<UpdateDocumentUseCase>(),
       deleteDocumentUseCase: sl<DeleteDocumentUseCase>(),

@@ -3,10 +3,10 @@ class ApiConstants {
   static const String baseUrl = '/api';
 
   // Auth endpoints
-  static const String login = '/login/';
-  static const String logout = '/logout/';
-  static const String refreshToken = '/refresh/';
-  static const String register = '/register/';
+  static const String login = '/auth/login/';
+  static const String logout = '/auth/logout/';
+  static const String refreshToken = '/auth/refresh/';
+  static const String register = '/auth/register/';
 
   // User endpoints
   static const String currentUser = '/users/me/';
@@ -20,7 +20,6 @@ class ApiConstants {
 
   // Documents endpoints
   static const String documents = '/documents/';
-  static const String uploadDocument = '/documents/upload/';
 
   // Timeout
   static const Duration connectionTimeout = Duration(seconds: 30);

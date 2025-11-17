@@ -54,6 +54,15 @@ class DocumentUploaded extends DocumentState {
   List<Object?> get props => [document];
 }
 
+class DocumentUploadInProgress extends DocumentState {
+  final double progress; // 0.0 - 1.0
+
+  const DocumentUploadInProgress(this.progress);
+
+  @override
+  List<Object?> get props => [progress];
+}
+
 class DocumentError extends DocumentState {
   final String message;
   const DocumentError(this.message);

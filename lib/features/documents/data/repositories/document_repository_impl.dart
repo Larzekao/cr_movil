@@ -133,6 +133,20 @@ class DocumentRepositoryImpl implements DocumentRepository {
     String? doctorLicense,
   }) async {
     try {
+      // Validación básica
+      if (clinicalRecordId.isEmpty) {
+        return Left(ServerFailure('ID de historia clínica es requerido'));
+      }
+      if (documentType.isEmpty) {
+        return Left(ServerFailure('Tipo de documento es requerido'));
+      }
+      if (title.isEmpty) {
+        return Left(ServerFailure('Título del documento es requerido'));
+      }
+      if (filePath.isEmpty) {
+        return Left(ServerFailure('Ruta del archivo es requerida'));
+      }
+
       final document = await remoteDataSource.uploadDocument(
         clinicalRecordId: clinicalRecordId,
         documentType: documentType,
@@ -148,7 +162,7 @@ class DocumentRepositoryImpl implements DocumentRepository {
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
+      return Left(ServerFailure('Error inesperado al subir documento: $e'));
     }
   }
 
