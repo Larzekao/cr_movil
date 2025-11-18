@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/clinical_record_entity.dart';
@@ -14,24 +15,39 @@ class ClinicalRecordsListPage extends StatefulWidget {
 
 class _ClinicalRecordsListPageState extends State<ClinicalRecordsListPage> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     // Cargar historias clínicas al iniciar
-    context.read<ClinicalRecordBloc>().add(GetClinicalRecordsEvent());
+    _loadClinicalRecords();
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
+  void _loadClinicalRecords() {
+    context.read<ClinicalRecordBloc>().add(GetClinicalRecordsEvent());
+  }
+
   void _onSearch(String query) {
-    context.read<ClinicalRecordBloc>().add(
-      GetClinicalRecordsEvent(search: query.isEmpty ? null : query),
-    );
+    // Actualizar UI para mostrar/ocultar el botón de limpiar
+    setState(() {});
+
+    // Cancelar el timer anterior si existe
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // Crear nuevo timer con delay de 500ms
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      context.read<ClinicalRecordBloc>().add(
+        GetClinicalRecordsEvent(search: query.isEmpty ? null : query),
+      );
+    });
   }
 
   @override
@@ -52,8 +68,10 @@ class _ClinicalRecordsListPageState extends State<ClinicalRecordsListPage> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
-                          _searchController.clear();
-                          _onSearch('');
+                          setState(() {
+                            _searchController.clear();
+                          });
+                          _loadClinicalRecords();
                         },
                       )
                     : null,
@@ -64,10 +82,7 @@ class _ClinicalRecordsListPageState extends State<ClinicalRecordsListPage> {
                   borderSide: BorderSide.none,
                 ),
               ),
-              onChanged: (value) {
-                setState(() {});
-              },
-              onSubmitted: _onSearch,
+              onChanged: _onSearch,
             ),
           ),
         ),

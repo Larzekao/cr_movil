@@ -250,36 +250,120 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
     String? doctorLicense,
   }) async {
     try {
+      _logger.i('Iniciando upload de documento: $title');
+
+      // Construir FormData con campos requeridos
       final formData = FormData.fromMap({
         'clinical_record': clinicalRecordId,
         'document_type': documentType,
         'title': title,
         'document_date': documentDate.toIso8601String(),
-        'description': description,
-        'specialty': specialty,
-        'doctor_name': doctorName,
-        'doctor_license': doctorLicense,
         'file': await MultipartFile.fromFile(filePath),
       });
 
+      // Agregar campos opcionales solo si están presentes
+      if (description != null && description.isNotEmpty) {
+        formData.fields.add(MapEntry('description', description));
+      }
+      if (specialty != null && specialty.isNotEmpty) {
+        formData.fields.add(MapEntry('specialty', specialty));
+      }
+      if (doctorName != null && doctorName.isNotEmpty) {
+        formData.fields.add(MapEntry('doctor_name', doctorName));
+      }
+      if (doctorLicense != null && doctorLicense.isNotEmpty) {
+        formData.fields.add(MapEntry('doctor_license', doctorLicense));
+      }
+
+      _logger.d('FormData preparado para upload: $formData');
+
+      // Enviar POST multipart directamente a /api/documents/
       final response = await client.post(
-        '${ApiConstants.documents}upload/',
+        ApiConstants.documents,
         data: formData,
       );
 
+      _logger.d('Upload response status: ${response.statusCode}');
+      _logger.d('Upload response data: ${response.data}');
+
       if (response.statusCode == 201 && response.data != null) {
-        return DocumentModel.fromJson(response.data as Map<String, dynamic>);
+        final document = DocumentModel.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+        _logger.i('Documento subido exitosamente: ${document.id}');
+        return document;
       } else {
+        final errorMessage =
+            response.data?['detail'] ??
+            response.data?['error'] ??
+            'Error al subir documento';
         throw ServerException(
-          message: 'Error al subir documento',
+          message: errorMessage,
           statusCode: response.statusCode,
         );
       }
+    } on DioException catch (e) {
+      _logger.e(
+        'DioException durante upload',
+        error: e,
+        stackTrace: e.stackTrace,
+      );
+
+      // Manejo específico de errores de Dio
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw ServerException(
+          message: 'Tiempo de conexión agotado. Intente de nuevo.',
+          statusCode: e.response?.statusCode,
+        );
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        throw ServerException(
+          message: 'Tiempo de espera agotado. El servidor tardó demasiado.',
+          statusCode: e.response?.statusCode,
+        );
+      } else if (e.type == DioExceptionType.unknown) {
+        throw ServerException(
+          message: 'Error de conexión de red. Verifica tu conexión.',
+          statusCode: e.response?.statusCode,
+        );
+      } else if (e.response?.statusCode == 400) {
+        final errorData = e.response?.data as Map<String, dynamic>?;
+        final errorMessage = errorData?['detail'] ?? 'Solicitud inválida';
+        throw ServerException(message: errorMessage, statusCode: 400);
+      } else if (e.response?.statusCode == 401) {
+        throw ServerException(
+          message: 'No autorizado. Por favor inicia sesión nuevamente.',
+          statusCode: 401,
+        );
+      } else if (e.response?.statusCode == 403) {
+        throw ServerException(
+          message: 'Acceso denegado. No tienes permiso para subir documentos.',
+          statusCode: 403,
+        );
+      } else if (e.response?.statusCode == 413) {
+        throw ServerException(
+          message: 'El archivo es demasiado grande. Máximo 100MB.',
+          statusCode: 413,
+        );
+      } else if (e.response?.statusCode == 500) {
+        throw ServerException(
+          message: 'Error interno del servidor. Intenta más tarde.',
+          statusCode: 500,
+        );
+      }
+
+      throw ServerException(
+        message: 'Error al subir documento: ${e.message}',
+        statusCode: e.response?.statusCode,
+      );
     } on ServerException {
       rethrow;
-    } catch (e) {
-      _logger.e('Error uploading document', error: e);
-      throw ServerException(message: 'Error de conexión: $e');
+    } catch (e, stackTrace) {
+      _logger.e(
+        'Error inesperado al subir documento',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw ServerException(message: 'Error inesperado: ${e.toString()}');
     }
   }
 

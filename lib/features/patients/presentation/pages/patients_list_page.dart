@@ -30,6 +30,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
   }
 
   void _searchPatients(String query) {
+    // Actualizar UI para mostrar/ocultar el botón de limpiar
+    setState(() {});
+
     // Cancelar el timer anterior si existe
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -66,7 +69,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
-                          _searchController.clear();
+                          setState(() {
+                            _searchController.clear();
+                          });
                           _loadPatients();
                         },
                       )

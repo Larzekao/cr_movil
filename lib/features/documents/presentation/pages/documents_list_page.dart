@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../config/dependency_injection/injection_container.dart';
@@ -7,6 +8,7 @@ import '../bloc/document_bloc.dart';
 import '../bloc/document_event.dart';
 import '../bloc/document_state.dart';
 import '../../domain/entities/document_entity.dart';
+import 'document_detail_page.dart';
 
 class DocumentsListPage extends StatelessWidget {
   final String? clinicalRecordId;
@@ -40,6 +42,8 @@ class _DocumentsListView extends StatefulWidget {
 
 class _DocumentsListViewState extends State<_DocumentsListView> {
   String? _selectedType;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   final List<Map<String, String>> _documentTypes = [
     {'value': 'consultation', 'label': 'Consulta'},
@@ -53,6 +57,13 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
     {'value': 'referral', 'label': 'Referencia'},
   ];
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _onFilterChanged(String? type) {
     setState(() {
       _selectedType = type;
@@ -61,6 +72,36 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
       LoadDocuments(
         clinicalRecordId: widget.clinicalRecordId,
         documentType: type,
+        search: _searchController.text.isEmpty ? null : _searchController.text,
+      ),
+    );
+  }
+
+  void _onSearch(String query) {
+    // Actualizar UI para mostrar/ocultar el botón de limpiar
+    setState(() {});
+
+    // Cancelar el timer anterior si existe
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // Crear nuevo timer con delay de 500ms
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      context.read<DocumentBloc>().add(
+        LoadDocuments(
+          clinicalRecordId: widget.clinicalRecordId,
+          documentType: _selectedType,
+          search: query.isEmpty ? null : query,
+        ),
+      );
+    });
+  }
+
+  void _loadDocuments() {
+    context.read<DocumentBloc>().add(
+      LoadDocuments(
+        clinicalRecordId: widget.clinicalRecordId,
+        documentType: _selectedType,
+        search: _searchController.text.isEmpty ? null : _searchController.text,
       ),
     );
   }
@@ -77,22 +118,45 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<DocumentBloc>().add(
-                LoadDocuments(
-                  clinicalRecordId: widget.clinicalRecordId,
-                  documentType: _selectedType,
-                ),
-              );
-            },
+            onPressed: _loadDocuments,
           ),
         ],
       ),
       body: Column(
         children: [
+          // Barra de búsqueda
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar por título o paciente...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                          });
+                          _loadDocuments();
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: _onSearch,
+            ),
+          ),
+
           // Filtro por tipo
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 8.0),
             child: DropdownButtonFormField<String>(
               initialValue: _selectedType,
               decoration: const InputDecoration(
@@ -135,12 +199,7 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
                     ),
                   );
                   // Recargar lista
-                  context.read<DocumentBloc>().add(
-                    LoadDocuments(
-                      clinicalRecordId: widget.clinicalRecordId,
-                      documentType: _selectedType,
-                    ),
-                  );
+                  _loadDocuments();
                 }
               },
               builder: (context, state) {
@@ -151,14 +210,7 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
                 if (state is DocumentError) {
                   return custom.ErrorWidget(
                     message: state.message,
-                    onRetry: () {
-                      context.read<DocumentBloc>().add(
-                        LoadDocuments(
-                          clinicalRecordId: widget.clinicalRecordId,
-                          documentType: _selectedType,
-                        ),
-                      );
-                    },
+                    onRetry: _loadDocuments,
                   );
                 }
 
@@ -188,12 +240,7 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
 
                   return RefreshIndicator(
                     onRefresh: () async {
-                      context.read<DocumentBloc>().add(
-                        LoadDocuments(
-                          clinicalRecordId: widget.clinicalRecordId,
-                          documentType: _selectedType,
-                        ),
-                      );
+                      _loadDocuments();
                     },
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -203,7 +250,13 @@ class _DocumentsListViewState extends State<_DocumentsListView> {
                         return _DocumentCard(
                           document: document,
                           onTap: () {
-                            // TODO: Navegar a detalle
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DocumentDetailPage(documentId: document.id),
+                              ),
+                            );
                           },
                           onDelete: () => _showDeleteDialog(context, document),
                         );

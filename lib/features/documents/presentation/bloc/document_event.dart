@@ -100,7 +100,7 @@ class UploadDocument extends DocumentEvent {
   final String documentType;
   final String title;
   final DateTime documentDate;
-  final String filePath;
+  final String filePath; // Ruta del archivo (puede ser XFile.path)
   final String? description;
   final String? specialty;
   final String? doctorName;
@@ -130,4 +130,17 @@ class UploadDocument extends DocumentEvent {
     doctorName,
     doctorLicense,
   ];
+}
+
+class DocumentUploadProgress extends DocumentEvent {
+  final double progress; // 0.0 - 1.0
+
+  const DocumentUploadProgress(this.progress);
+
+  @override
+  List<Object?> get props => [progress];
+}
+
+class DocumentUploadReset extends DocumentEvent {
+  const DocumentUploadReset();
 }

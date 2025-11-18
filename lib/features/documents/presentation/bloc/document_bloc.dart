@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/get_documents_usecase.dart';
+import '../../domain/usecases/get_document_by_id_usecase.dart';
 import '../../domain/usecases/create_document_usecase.dart';
 import '../../domain/usecases/update_document_usecase.dart';
 import '../../domain/usecases/delete_document_usecase.dart';
@@ -9,6 +10,7 @@ import 'document_state.dart';
 
 class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
   final GetDocumentsUseCase getDocumentsUseCase;
+  final GetDocumentByIdUseCase getDocumentByIdUseCase;
   final CreateDocumentUseCase createDocumentUseCase;
   final UpdateDocumentUseCase updateDocumentUseCase;
   final DeleteDocumentUseCase deleteDocumentUseCase;
@@ -16,16 +18,20 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
   DocumentBloc({
     required this.getDocumentsUseCase,
+    required this.getDocumentByIdUseCase,
     required this.createDocumentUseCase,
     required this.updateDocumentUseCase,
     required this.deleteDocumentUseCase,
     required this.uploadDocumentUseCase,
   }) : super(const DocumentInitial()) {
     on<LoadDocuments>(_onLoadDocuments);
+    on<LoadDocumentById>(_onLoadDocumentById);
     on<CreateDocument>(_onCreateDocument);
     on<UpdateDocument>(_onUpdateDocument);
     on<DeleteDocument>(_onDeleteDocument);
     on<UploadDocument>(_onUploadDocument);
+    on<DocumentUploadProgress>(_onDocumentUploadProgress);
+    on<DocumentUploadReset>(_onDocumentUploadReset);
   }
 
   Future<void> _onLoadDocuments(
@@ -43,6 +49,20 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     result.fold(
       (failure) => emit(DocumentError(failure.message)),
       (documents) => emit(DocumentsLoaded(documents)),
+    );
+  }
+
+  Future<void> _onLoadDocumentById(
+    LoadDocumentById event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(const DocumentLoading());
+
+    final result = await getDocumentByIdUseCase(event.id);
+
+    result.fold(
+      (failure) => emit(DocumentError(failure.message)),
+      (document) => emit(DocumentLoaded(document)),
     );
   }
 
@@ -111,7 +131,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
   ) async {
     emit(const DocumentLoading());
 
-    final result = await uploadDocumentUseCase(
+    // Construir parámetros para el UseCase
+    final params = UploadDocumentParams(
       clinicalRecordId: event.clinicalRecordId,
       documentType: event.documentType,
       title: event.title,
@@ -123,9 +144,26 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
       doctorLicense: event.doctorLicense,
     );
 
+    // Llamar al UseCase
+    final result = await uploadDocumentUseCase.call(params);
+
     result.fold(
       (failure) => emit(DocumentError(failure.message)),
       (document) => emit(DocumentUploaded(document)),
     );
+  }
+
+  void _onDocumentUploadProgress(
+    DocumentUploadProgress event,
+    Emitter<DocumentState> emit,
+  ) {
+    emit(DocumentUploadInProgress(event.progress));
+  }
+
+  void _onDocumentUploadReset(
+    DocumentUploadReset event,
+    Emitter<DocumentState> emit,
+  ) {
+    emit(const DocumentInitial());
   }
 }

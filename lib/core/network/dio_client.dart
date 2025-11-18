@@ -85,7 +85,10 @@ class DioClient {
     _logger.e('ERROR DATA: ${error.response?.data}');
 
     // Manejar error 401 (No autorizado) - Refresh token
-    if (error.response?.statusCode == 401) {
+    // IMPORTANTE: No refrescar si ya estamos en el endpoint de refresh o login
+    if (error.response?.statusCode == 401 &&
+        !error.requestOptions.path.contains('refresh') &&
+        !error.requestOptions.path.contains('login')) {
       final refreshed = await _refreshToken();
       if (refreshed) {
         // Reintentar la petición original

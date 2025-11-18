@@ -177,7 +177,7 @@ class HomePage extends StatelessWidget {
               icon: Icons.description_outlined,
               title: 'Documentos',
               color: Colors.orange,
-              onTap: () => _showComingSoon(context, 'Documentos'),
+              onTap: () => Navigator.pushNamed(context, '/documents'),
             ),
             _buildQuickAccessCard(
               context,
