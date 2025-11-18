@@ -15,6 +15,9 @@ import 'features/clinical_records/presentation/bloc/clinical_record_bloc.dart';
 import 'features/clinical_records/presentation/pages/clinical_records_list_page.dart';
 import 'features/clinical_records/presentation/pages/clinical_record_detail_page.dart';
 import 'features/clinical_records/presentation/pages/clinical_record_form_page.dart';
+import 'features/notifications/presentation/bloc/notification_bloc.dart';
+import 'features/notifications/presentation/bloc/notification_event.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +27,10 @@ void main() async {
 
   // Inicializar inyección de dependencias
   await di.init();
+
+  // Inicializar NotificationService para obtener token FCM
+  final notificationService = di.sl<NotificationService>();
+  await notificationService.initialize();
 
   runApp(const MyApp());
 }
@@ -39,6 +46,14 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => di.sl<PatientBloc>()),
         BlocProvider(create: (context) => di.sl<DocumentBloc>()),
         BlocProvider(create: (context) => di.sl<ClinicalRecordBloc>()),
+        BlocProvider(
+          create: (context) {
+            final bloc = di.sl<NotificationBloc>();
+            // Inicializar notificaciones automáticamente
+            bloc.add(const InitializeNotifications());
+            return bloc;
+          },
+        ),
       ],
       child: MaterialApp(
         title: 'CliniDocs Mobile',
@@ -60,9 +75,8 @@ class MyApp extends StatelessWidget {
           if (settings.name == '/clinical-record-detail') {
             final clinicalRecordId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (context) => ClinicalRecordDetailPage(
-                clinicalRecordId: clinicalRecordId,
-              ),
+              builder: (context) =>
+                  ClinicalRecordDetailPage(clinicalRecordId: clinicalRecordId),
             );
           }
           if (settings.name == '/clinical-record-create') {
@@ -73,9 +87,8 @@ class MyApp extends StatelessWidget {
           if (settings.name == '/clinical-record-edit') {
             final clinicalRecordId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (context) => ClinicalRecordFormPage(
-                clinicalRecordId: clinicalRecordId,
-              ),
+              builder: (context) =>
+                  ClinicalRecordFormPage(clinicalRecordId: clinicalRecordId),
             );
           }
           return null;

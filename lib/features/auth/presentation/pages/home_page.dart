@@ -156,7 +156,7 @@ class HomePage extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.3,
+          childAspectRatio: 1.1,
           children: [
             _buildQuickAccessCard(
               context,
@@ -206,25 +206,31 @@ class HomePage extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0), // Reducido de 16 a 12
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10), // Reducido de 12 a 10
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 32, color: color),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: color,
+                ), // Reducido de 32 a 28
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8), // Reducido de 12 a 8
               Text(
                 title,
                 style: AppTextStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2, // Permitir 2 líneas si el texto es largo
+                overflow: TextOverflow.ellipsis, // Agregar elipsis si sobrepasa
               ),
             ],
           ),

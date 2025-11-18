@@ -49,6 +49,11 @@ import '../../features/documents/domain/usecases/delete_document_usecase.dart';
 import '../../features/documents/domain/usecases/upload_document_usecase.dart';
 import '../../features/documents/presentation/bloc/document_bloc.dart';
 
+// Features - Notifications
+import '../../features/notifications/data/datasources/notification_remote_datasource.dart';
+import '../../features/notifications/presentation/bloc/notification_bloc.dart';
+import '../../core/services/notification_service.dart';
+
 final sl = GetIt.instance;
 
 /// Inicializa todas las dependencias de la aplicación
@@ -111,6 +116,7 @@ Future<void> init() async {
   _initPatients();
   _initClinicalRecords();
   _initDocuments();
+  _initNotifications();
 }
 
 /// Inicializa las dependencias del feature de autenticación
@@ -170,6 +176,12 @@ void _initAuth() {
       loginUseCase: sl<LoginUseCase>(),
       logoutUseCase: sl<LogoutUseCase>(),
       getCurrentUserUseCase: sl<GetCurrentUserUseCase>(),
+      notificationDataSource: sl.isRegistered<NotificationRemoteDataSource>()
+          ? sl<NotificationRemoteDataSource>()
+          : null,
+      notificationService: sl.isRegistered<NotificationService>()
+          ? sl<NotificationService>()
+          : null,
     ),
   );
 }
@@ -365,6 +377,42 @@ void _initDocuments() {
       updateDocumentUseCase: sl<UpdateDocumentUseCase>(),
       deleteDocumentUseCase: sl<DeleteDocumentUseCase>(),
       uploadDocumentUseCase: sl<UploadDocumentUseCase>(),
+    ),
+  );
+}
+
+/// Inicializa las dependencias del feature de notificaciones
+///
+/// Incluye:
+/// - NotificationService (Singleton)
+/// - DataSources (Remote)
+/// - BLoC
+void _initNotifications() {
+  // =========================================================================
+  // Core Service
+  // =========================================================================
+
+  // NotificationService - Singleton para gestionar FCM
+  sl.registerLazySingleton<NotificationService>(() => NotificationService());
+
+  // =========================================================================
+  // Data Layer
+  // =========================================================================
+
+  // DataSources
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSourceImpl(client: sl<DioClient>()),
+  );
+
+  // =========================================================================
+  // Presentation Layer
+  // =========================================================================
+
+  // BLoC
+  sl.registerFactory<NotificationBloc>(
+    () => NotificationBloc(
+      notificationService: sl<NotificationService>(),
+      remoteDataSource: sl<NotificationRemoteDataSource>(),
     ),
   );
 }

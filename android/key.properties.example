@@ -1,0 +1,30 @@
+# ============================================================================
+# Android Release Signing Configuration
+# ============================================================================
+# 
+# INSTRUCCIONES:
+# 1. Copia este archivo a: android/key.properties
+# 2. Reemplaza los valores con tus credenciales reales
+# 3. NUNCA subas key.properties a Git (ya está en .gitignore)
+# 
+# ============================================================================
+
+# Contraseña del keystore
+storePassword=TU_CONTRASEÑA_AQUI
+
+# Contraseña de la key
+keyPassword=TU_CONTRASEÑA_AQUI
+
+# Alias de la key
+keyAlias=clinidocs
+
+# Ruta al archivo keystore (relativo a android/)
+storeFile=app/clinidocs-release-key.keystore
+
+# ============================================================================
+# EJEMPLO REAL (para referencia):
+# ============================================================================
+# storePassword=ClinicDocs2025!
+# keyPassword=ClinicDocs2025!
+# keyAlias=clinidocs
+# storeFile=app/clinidocs-release-key.keystore
