@@ -110,6 +110,11 @@ Future<void> init() async {
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfo());
 
   // =========================================================================
+  // Inicializar NotificationService primero
+  // =========================================================================
+  sl.registerLazySingleton<NotificationService>(() => NotificationService());
+
+  // =========================================================================
   // Features
   // =========================================================================
 
@@ -390,17 +395,9 @@ void _initDocuments() {
 /// Inicializa las dependencias del feature de notificaciones
 ///
 /// Incluye:
-/// - NotificationService (Singleton)
 /// - DataSources (Remote)
 /// - BLoC
 void _initNotifications() {
-  // =========================================================================
-  // Core Service
-  // =========================================================================
-
-  // NotificationService - Singleton para gestionar FCM
-  sl.registerLazySingleton<NotificationService>(() => NotificationService());
-
   // =========================================================================
   // Data Layer
   // =========================================================================

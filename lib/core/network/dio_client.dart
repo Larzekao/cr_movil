@@ -293,7 +293,7 @@ class DioClient {
           }
         }
 
-        return ServerException(message: message, statusCode: statusCode);
+        return ServerException(message: message, statusCode: statusCode ?? 0);
 
       case DioExceptionType.cancel:
         return NetworkException(message: 'Petición cancelada');
