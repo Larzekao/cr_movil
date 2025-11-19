@@ -2,11 +2,11 @@ class ApiConstants {
   // Base
   static const String baseUrl = '/api';
 
-  // Auth endpoints
-  static const String login = '/auth/login/';
-  static const String logout = '/auth/logout/';
-  static const String refreshToken = '/auth/refresh/';
-  static const String register = '/auth/register/';
+  // Auth endpoints (Django REST Framework endpoints, sin /auth/ prefix)
+  static const String login = '/login/';
+  static const String logout = '/logout/';
+  static const String refreshToken = '/refresh/';
+  static const String register = '/register/';
 
   // User endpoints
   static const String currentUser = '/users/me/';
