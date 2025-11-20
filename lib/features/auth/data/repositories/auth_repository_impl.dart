@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/network/network_info.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_datasource.dart';
@@ -46,6 +47,19 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: accessToken,
         refreshToken: refreshToken,
       );
+
+      // 🔥 REGISTRAR TOKEN FCM EN EL BACKEND (después del login exitoso)
+      try {
+        final notificationService = NotificationService();
+        final fcmToken = notificationService.fcmToken;
+
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          // Registrar token en background (no bloqueamos el login)
+          await remoteDataSource.registerFcmToken(fcmToken);
+        }
+      } catch (e) {
+        // Si falla el registro del FCM, continuamos (no bloquea el login)
+      }
 
       return Right(user);
     } on ServerException catch (e) {

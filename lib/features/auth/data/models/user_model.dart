@@ -52,27 +52,56 @@ class UserModel extends UserEntity {
       }
     } catch (e) {
       // Si hay error parseando el role, continuar con role null
-      // ignore: avoid_print
-      // print('Error parsing role: $e');
+      print('⚠️ Error parsing role: $e');
       role = null;
     }
 
     try {
+      // Parseo robusto con conversión de tipos
+      final id = _parseString(json['id']);
+      final email = _parseString(json['email']);
+      final firstName = _parseString(json['first_name']);
+      final lastName = _parseString(json['last_name']);
+      final fullName = _parseString(json['full_name']) ?? 'Usuario';
+      final isActive = _parseBool(json['is_active']) ?? true;
+
+      print('✅ User parsed - ID: $id, Email: $email, Active: $isActive');
+
       return UserModel(
-        id: json['id'] as String? ?? '',
-        email: json['email'] as String? ?? '',
-        firstName: json['first_name'] as String? ?? '',
-        lastName: json['last_name'] as String? ?? '',
-        fullName: json['full_name'] as String? ?? 'Usuario',
+        id: id ?? '',
+        email: email ?? '',
+        firstName: firstName ?? '',
+        lastName: lastName ?? '',
+        fullName: fullName,
         role: role,
-        isActive: json['is_active'] as bool? ?? true,
+        isActive: isActive,
       );
-    } catch (e) {
-      // ignore: avoid_print
-      // print('Error creating UserModel: $e');
-      // print('JSON: $json');
+    } catch (e, stackTrace) {
+      print('❌ Error creating UserModel: $e');
+      print('📋 JSON: $json');
+      print('📍 StackTrace: $stackTrace');
       rethrow;
     }
+  }
+
+  // Helpers para parseo robusto
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is int) return value.toString();
+    if (value is double) return value.toString();
+    if (value is bool) return value.toString();
+    return value.toString();
+  }
+
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is String) {
+      return value.toLowerCase() == 'true' || value == '1';
+    }
+    if (value is int) return value == 1;
+    return null;
   }
 
   Map<String, dynamic> toJson() {

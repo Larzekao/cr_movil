@@ -20,6 +20,10 @@ abstract class AuthRemoteDataSource {
 
   /// Refresca el access token
   Future<Map<String, String>> refreshToken(String refreshToken);
+
+  /// Registra el token FCM del dispositivo en el servidor
+  /// Para que el backend pueda enviar notificaciones push
+  Future<void> registerFcmToken(String fcmToken);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -188,6 +192,36 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } catch (e) {
       throw AuthException(message: 'Error al refrescar token: $e');
+    }
+  }
+
+  @override
+  Future<void> registerFcmToken(String fcmToken) async {
+    try {
+      if (fcmToken.isEmpty) {
+        _logger.w('⚠️ FCM token vacío, omitiendo registro');
+        return;
+      }
+
+      _logger.d('📱 Registrando token FCM: ${fcmToken.substring(0, 20)}...');
+
+      final response = await client.post(
+        '/users/update_fcm_token/',
+        data: {'fcm_token': fcmToken},
+      );
+
+      if (response.statusCode == 200) {
+        _logger.i('✅ Token FCM registrado en backend exitosamente');
+      } else {
+        _logger.w('⚠️ Error al registrar FCM token: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      _logger.e(
+        '❌ Error registrando FCM token',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // No lanzamos excepción porque no queremos bloquear el login
     }
   }
 }
