@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_drawer.dart';
+import '../../../help/presentation/widgets/help_chat_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -73,6 +74,7 @@ class HomePage extends StatelessWidget {
               },
             ),
             body: _buildDashboard(context, user),
+            floatingActionButton: const HelpChatButton(),
           );
         }
 

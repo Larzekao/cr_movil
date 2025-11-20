@@ -18,6 +18,7 @@ import 'features/clinical_records/presentation/pages/clinical_record_form_page.d
 import 'features/notifications/presentation/bloc/notification_bloc.dart';
 import 'features/notifications/presentation/bloc/notification_event.dart';
 import 'core/services/notification_service.dart';
+import 'features/help/presentation/bloc/help_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,7 @@ class MyApp extends StatelessWidget {
             return bloc;
           },
         ),
+        BlocProvider(create: (context) => HelpBloc()),
       ],
       child: MaterialApp(
         title: 'CliniDocs Mobile',

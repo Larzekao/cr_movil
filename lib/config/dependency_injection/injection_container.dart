@@ -55,6 +55,12 @@ import '../../features/notifications/data/datasources/notification_remote_dataso
 import '../../features/notifications/presentation/bloc/notification_bloc.dart';
 import '../../core/services/notification_service.dart';
 
+// Features - AI (Diabetes Prediction)
+import '../../features/ai/data/datasources/diabetes_remote_datasource.dart';
+import '../../features/ai/data/repositories/diabetes_repository_impl.dart';
+import '../../features/ai/domain/repositories/diabetes_repository.dart';
+import '../../features/ai/presentation/bloc/diabetes_bloc.dart';
+
 final sl = GetIt.instance;
 
 /// Inicializa todas las dependencias de la aplicación
@@ -123,6 +129,7 @@ Future<void> init() async {
   _initClinicalRecords();
   _initDocuments();
   _initNotifications();
+  _initAI();
 }
 
 /// Inicializa las dependencias del feature de autenticación
@@ -417,5 +424,36 @@ void _initNotifications() {
       notificationService: sl<NotificationService>(),
       remoteDataSource: sl<NotificationRemoteDataSource>(),
     ),
+  );
+}
+
+/// Inicializa las dependencias del feature de IA (Predicción de Diabetes)
+///
+/// Incluye:
+/// - DataSources (Remote)
+/// - Repository
+/// - BLoC
+void _initAI() {
+  // =========================================================================
+  // Data Layer
+  // =========================================================================
+
+  // DataSources
+  sl.registerLazySingleton<DiabetesRemoteDataSource>(
+    () => DiabetesRemoteDataSourceImpl(dioClient: sl<DioClient>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<DiabetesRepository>(
+    () => DiabetesRepositoryImpl(remoteDataSource: sl<DiabetesRemoteDataSource>()),
+  );
+
+  // =========================================================================
+  // Presentation Layer
+  // =========================================================================
+
+  // BLoC
+  sl.registerFactory<DiabetesBloc>(
+    () => DiabetesBloc(repository: sl<DiabetesRepository>()),
   );
 }
