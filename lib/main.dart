@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:image_picker/image_picker.dart';
 import 'config/dependency_injection/injection_container.dart' as di;
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -11,6 +12,9 @@ import 'features/patients/presentation/bloc/patient_bloc.dart';
 import 'features/patients/presentation/pages/patients_list_page.dart';
 import 'features/documents/presentation/bloc/document_bloc.dart';
 import 'features/documents/presentation/pages/documents_list_page.dart';
+import 'features/documents/presentation/pages/document_camera_page.dart';
+import 'features/documents/presentation/pages/document_upload_page.dart';
+import 'features/documents/presentation/pages/document_create_page.dart';
 import 'features/clinical_records/presentation/bloc/clinical_record_bloc.dart';
 import 'features/clinical_records/presentation/pages/clinical_records_list_page.dart';
 import 'features/clinical_records/presentation/pages/clinical_record_detail_page.dart';
@@ -68,6 +72,7 @@ class MyApp extends StatelessWidget {
           '/home': (context) => const HomePage(),
           '/patients': (context) => const PatientsListPage(),
           '/documents': (context) => const DocumentsListPage(),
+          '/document-create': (context) => const DocumentCreatePage(),
           '/clinical-records': (context) => const ClinicalRecordsListPage(),
         },
         onGenerateRoute: (settings) {
@@ -89,6 +94,25 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) =>
                   ClinicalRecordFormPage(clinicalRecordId: clinicalRecordId),
+            );
+          }
+          if (settings.name == '/document-camera') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            return MaterialPageRoute(
+              builder: (context) => DocumentCameraPage(
+                clinicalRecordId: args?['clinicalRecordId'],
+              ),
+            );
+          }
+          if (settings.name == '/document-upload') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DocumentUploadPage(
+                clinicalRecordId: args['clinicalRecordId'] as String,
+                capturedFiles: args['capturedFiles'] as List<XFile>,
+                patientName: args['patientName'] as String?,
+                patientIdentity: args['patientIdentity'] as String?,
+              ),
             );
           }
           return null;

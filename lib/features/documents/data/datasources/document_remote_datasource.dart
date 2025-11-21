@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../../../../core/constants/api_constants.dart';
@@ -251,6 +252,19 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
   }) async {
     try {
       _logger.i('Iniciando upload de documento: $title');
+      _logger.d('Ruta del archivo: $filePath');
+
+      // Verificar que el archivo existe
+      final file = File(filePath);
+      if (!await file.exists()) {
+        _logger.e('El archivo no existe en la ruta: $filePath');
+        throw ServerException(
+          message: 'El archivo no existe. Ruta: $filePath',
+          statusCode: 400,
+        );
+      }
+
+      _logger.d('Archivo encontrado. Tamaño: ${await file.length()} bytes');
 
       // Construir FormData con campos requeridos
       final formData = FormData.fromMap({
@@ -258,24 +272,37 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
         'document_type': documentType,
         'title': title,
         'document_date': documentDate.toIso8601String(),
-        'file': await MultipartFile.fromFile(filePath),
+        'file': await MultipartFile.fromFile(
+          filePath,
+          filename: file.path.split('/').last,
+        ),
       });
+
+      _logger.d(
+        'FormData - clinical_record: $clinicalRecordId, document_type: $documentType, title: $title, file: ${file.path}',
+      );
 
       // Agregar campos opcionales solo si están presentes
       if (description != null && description.isNotEmpty) {
         formData.fields.add(MapEntry('description', description));
+        _logger.d('Agregado description: $description');
       }
       if (specialty != null && specialty.isNotEmpty) {
         formData.fields.add(MapEntry('specialty', specialty));
+        _logger.d('Agregado specialty: $specialty');
       }
       if (doctorName != null && doctorName.isNotEmpty) {
         formData.fields.add(MapEntry('doctor_name', doctorName));
+        _logger.d('Agregado doctor_name: $doctorName');
       }
       if (doctorLicense != null && doctorLicense.isNotEmpty) {
         formData.fields.add(MapEntry('doctor_license', doctorLicense));
+        _logger.d('Agregado doctor_license: $doctorLicense');
       }
 
-      _logger.d('FormData preparado para upload: $formData');
+      _logger.i(
+        'FormData preparado. Iniciando POST a: ${ApiConstants.documents}',
+      );
 
       // Enviar POST multipart directamente a /api/documents/
       final response = await client.post(
@@ -290,21 +317,31 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
         final document = DocumentModel.fromJson(
           response.data as Map<String, dynamic>,
         );
-        _logger.i('Documento subido exitosamente: ${document.id}');
+        _logger.i('✅ Documento subido exitosamente: ${document.id}');
+        _logger.d('Documento data: ${response.data}');
+        return document;
+      } else if (response.statusCode == 200 && response.data != null) {
+        // Algunos servidores retornan 200 en lugar de 201
+        final document = DocumentModel.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+        _logger.i('✅ Documento subido exitosamente (200): ${document.id}');
         return document;
       } else {
         final errorMessage =
             response.data?['detail'] ??
             response.data?['error'] ??
-            'Error al subir documento';
+            response.data?['message'] ??
+            'Error desconocido al subir documento';
+        _logger.e('Error response: $errorMessage');
         throw ServerException(
-          message: errorMessage,
+          message: errorMessage.toString(),
           statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
       _logger.e(
-        'DioException durante upload',
+        '❌ DioException durante upload',
         error: e,
         stackTrace: e.stackTrace,
       );
@@ -327,8 +364,13 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
         );
       } else if (e.response?.statusCode == 400) {
         final errorData = e.response?.data as Map<String, dynamic>?;
-        final errorMessage = errorData?['detail'] ?? 'Solicitud inválida';
-        throw ServerException(message: errorMessage, statusCode: 400);
+        final errorMessage =
+            errorData?['detail'] ?? errorData?['error'] ?? 'Solicitud inválida';
+        _logger.e('Error 400: $errorMessage');
+        throw ServerException(
+          message: errorMessage.toString(),
+          statusCode: 400,
+        );
       } else if (e.response?.statusCode == 401) {
         throw ServerException(
           message: 'No autorizado. Por favor inicia sesión nuevamente.',
@@ -359,7 +401,7 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
       rethrow;
     } catch (e, stackTrace) {
       _logger.e(
-        'Error inesperado al subir documento',
+        '❌ Error inesperado al subir documento',
         error: e,
         stackTrace: stackTrace,
       );

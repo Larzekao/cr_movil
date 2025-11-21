@@ -175,9 +175,9 @@ class HomePage extends StatelessWidget {
             _buildQuickAccessCard(
               context,
               icon: Icons.description_outlined,
-              title: 'Documentos',
+              title: 'Crear Documento',
               color: Colors.orange,
-              onTap: () => Navigator.pushNamed(context, '/documents'),
+              onTap: () => Navigator.pushNamed(context, '/document-create'),
             ),
             _buildQuickAccessCard(
               context,
