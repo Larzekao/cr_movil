@@ -19,7 +19,8 @@ class ApiConstants {
   static const String clinicalRecords = '/clinical-records/';
 
   // Documents endpoints
-  static const String documents = '/documents/upload/';
+  static const String documents = '/documents/';
+  static const String documentsUpload = '/documents/upload/';
 
   // Timeout
   static const Duration connectionTimeout = Duration(seconds: 30);

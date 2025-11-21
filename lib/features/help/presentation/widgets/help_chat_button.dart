@@ -15,7 +15,7 @@ class HelpChatButton extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         String? userRole;
-        if (authState is Authenticated) {
+        if (authState is AuthAuthenticated) {
           userRole = authState.user.role?.name;
         }
 
@@ -34,10 +34,7 @@ class HelpChatButton extends StatelessWidget {
             );
           },
           backgroundColor: Colors.blue,
-          child: const Icon(
-            Icons.help_outline,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.help_outline, color: Colors.white),
         );
       },
     );
@@ -48,22 +45,30 @@ class HelpChatButton extends StatelessWidget {
 class HelpChatButtonMini extends StatelessWidget {
   final Alignment alignment;
 
-  const HelpChatButtonMini({
-    super.key,
-    this.alignment = Alignment.bottomLeft,
-  });
+  const HelpChatButtonMini({super.key, this.alignment = Alignment.bottomLeft});
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight ? 16 : null,
-      top: alignment == Alignment.topLeft || alignment == Alignment.topRight ? 16 : null,
-      left: alignment == Alignment.bottomLeft || alignment == Alignment.topLeft ? 16 : null,
-      right: alignment == Alignment.bottomRight || alignment == Alignment.topRight ? 16 : null,
+      bottom:
+          alignment == Alignment.bottomLeft ||
+              alignment == Alignment.bottomRight
+          ? 16
+          : null,
+      top: alignment == Alignment.topLeft || alignment == Alignment.topRight
+          ? 16
+          : null,
+      left: alignment == Alignment.bottomLeft || alignment == Alignment.topLeft
+          ? 16
+          : null,
+      right:
+          alignment == Alignment.bottomRight || alignment == Alignment.topRight
+          ? 16
+          : null,
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, authState) {
           String? userRole;
-          if (authState is Authenticated) {
+          if (authState is AuthAuthenticated) {
             userRole = authState.user.role?.name;
           }
 

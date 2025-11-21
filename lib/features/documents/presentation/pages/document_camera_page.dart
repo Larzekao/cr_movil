@@ -37,6 +37,8 @@ class _DocumentCameraPageState extends State<DocumentCameraPage> {
   @override
   void initState() {
     super.initState();
+    // Inicializar como Future completado para evitar LateInitializationError
+    _initializeControllerFuture = Future.value();
     _initializeCamera();
   }
 

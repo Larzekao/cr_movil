@@ -301,12 +301,12 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
       }
 
       _logger.i(
-        'FormData preparado. Iniciando POST a: ${ApiConstants.documents}',
+        'FormData preparado. Iniciando POST a: ${ApiConstants.documentsUpload}',
       );
 
-      // Enviar POST multipart directamente a /api/documents/
+      // Enviar POST multipart directamente a /api/documents/upload/
       final response = await client.post(
-        ApiConstants.documents,
+        ApiConstants.documentsUpload,
         data: formData,
       );
 
