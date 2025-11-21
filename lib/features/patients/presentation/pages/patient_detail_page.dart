@@ -236,8 +236,80 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                   Icons.update,
                 ),
             ]),
+
+            const SizedBox(height: 32),
+
+            // Botón de Predicción de Diabetes
+            _buildDiabetesPredictionButton(patient),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDiabetesPredictionButton(PatientEntity patient) {
+    return Card(
+      elevation: 4,
+      color: Colors.blue[50],
+      child: InkWell(
+        onTap: () => _navigateToDiabetesPrediction(patient),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.analytics,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Predicción de Diabetes',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Análisis con IA',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.blue,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDiabetesPrediction(PatientEntity patient) async {
+    // Implementación pendiente - conectar con el módulo AI
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Módulo de predicción en desarrollo'),
+        duration: Duration(seconds: 2),
       ),
     );
   }

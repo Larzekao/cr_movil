@@ -301,9 +301,9 @@ class _DocumentDetailViewState extends State<_DocumentDetailView> {
                       widget.document.content!.isNotEmpty)
                     const SizedBox(height: 24),
 
-                  // Descripción si existe
+                  // Descripción si existe y no está vacía
                   if (widget.document.description != null &&
-                      widget.document.description!.isNotEmpty)
+                      widget.document.description!.trim().isNotEmpty)
                     _InfoCard(
                       title: 'Descripción',
                       children: [
@@ -436,16 +436,23 @@ class _DocumentDetailViewState extends State<_DocumentDetailView> {
                   const SizedBox(height: 16),
 
                   // Información de archivo si existe
-                  if (widget.document.fileName != null)
+                  if (widget.document.fileName != null ||
+                      widget.document.mimeType != null ||
+                      widget.document.fileSizeBytes != null)
                     _InfoCard(
                       title: 'Información del Archivo',
                       children: [
                         _InfoItem(
                           label: 'Nombre',
-                          value: widget.document.fileName!,
+                          value:
+                              (widget.document.fileName != null &&
+                                  widget.document.fileName!.isNotEmpty)
+                              ? widget.document.fileName!
+                              : 'No disponible',
                           icon: Icons.description,
                         ),
-                        if (widget.document.fileSizeBytes != null)
+                        if (widget.document.fileSizeBytes != null &&
+                            widget.document.fileSizeBytes! > 0)
                           _InfoItem(
                             label: 'Tamaño',
                             value: _formatFileSize(
@@ -453,7 +460,8 @@ class _DocumentDetailViewState extends State<_DocumentDetailView> {
                             ),
                             icon: Icons.storage,
                           ),
-                        if (widget.document.mimeType != null)
+                        if (widget.document.mimeType != null &&
+                            widget.document.mimeType!.isNotEmpty)
                           _InfoItem(
                             label: 'Tipo',
                             value: widget.document.mimeType!,
@@ -804,35 +812,35 @@ class _ContentCard extends StatelessWidget {
         if (vitalSigns['blood_pressure'] != null)
           _buildVitalSignCard(
             'Presión Arterial',
-            vitalSigns['blood_pressure'] as String,
+            vitalSigns['blood_pressure'].toString(),
             'mmHg',
             Colors.green,
           ),
         if (vitalSigns['heart_rate'] != null)
           _buildVitalSignCard(
             'Frecuencia Cardíaca',
-            vitalSigns['heart_rate'] as String,
+            vitalSigns['heart_rate'].toString(),
             'lpm',
             Colors.red,
           ),
         if (vitalSigns['temperature'] != null)
           _buildVitalSignCard(
             'Temperatura',
-            vitalSigns['temperature'] as String,
+            vitalSigns['temperature'].toString(),
             '°C',
             Colors.orange,
           ),
         if (vitalSigns['respiratory_rate'] != null)
           _buildVitalSignCard(
             'Frecuencia Respiratoria',
-            vitalSigns['respiratory_rate'] as String,
+            vitalSigns['respiratory_rate'].toString(),
             'rpm',
             Colors.blue,
           ),
         if (vitalSigns['oxygen_saturation'] != null)
           _buildVitalSignCard(
             'Saturación O₂',
-            vitalSigns['oxygen_saturation'] as String,
+            vitalSigns['oxygen_saturation'].toString(),
             '%',
             Colors.indigo,
           ),
