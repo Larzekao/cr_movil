@@ -283,6 +283,15 @@ class _DocumentDetailViewState extends State<_DocumentDetailView> {
               ),
             ),
 
+            // Vista previa de imagen si es una imagen
+            if (_isImageFile(widget.document.mimeType) &&
+                widget.document.fileUrl != null &&
+                widget.document.fileUrl!.isNotEmpty)
+              _ImagePreviewSection(
+                imageUrl: widget.document.fileUrl!,
+                fileName: widget.document.fileName,
+              ),
+
             // Información del documento
             Padding(
               padding: const EdgeInsets.all(16),
@@ -488,6 +497,23 @@ class _DocumentDetailViewState extends State<_DocumentDetailView> {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  /// Verifica si el archivo es una imagen
+  bool _isImageFile(String? mimeType) {
+    if (mimeType != null && mimeType.startsWith('image/')) {
+      return true;
+    }
+    // También verificar por extensión del archivo
+    final fileName = widget.document.fileName?.toLowerCase() ?? '';
+    final fileUrl = widget.document.fileUrl?.toLowerCase() ?? '';
+    final imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    for (final ext in imageExtensions) {
+      if (fileName.endsWith(ext) || fileUrl.endsWith(ext)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -1689,6 +1715,193 @@ class _ContentCard extends StatelessWidget {
             const SizedBox(height: 16),
             ...children,
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget para mostrar vista previa de imagen
+class _ImagePreviewSection extends StatelessWidget {
+  final String imageUrl;
+  final String? fileName;
+
+  const _ImagePreviewSection({
+    required this.imageUrl,
+    this.fileName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 400),
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Imagen
+          Center(
+            child: GestureDetector(
+              onTap: () => _showFullScreenImage(context),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Cargando imagen...',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.broken_image,
+                          size: 64,
+                          color: Colors.white54,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No se pudo cargar la imagen',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error.toString(),
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          // Botón para ver en pantalla completa
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap: () => _showFullScreenImage(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.fullscreen, color: Colors.white, size: 20),
+                    SizedBox(width: 4),
+                    Text(
+                      'Ver completa',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _FullScreenImagePage(
+          imageUrl: imageUrl,
+          fileName: fileName,
+        ),
+      ),
+    );
+  }
+}
+
+/// Página de imagen en pantalla completa
+class _FullScreenImagePage extends StatelessWidget {
+  final String imageUrl;
+  final String? fileName;
+
+  const _FullScreenImagePage({
+    required this.imageUrl,
+    this.fileName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(
+          fileName ?? 'Imagen',
+          style: const TextStyle(fontSize: 14),
+        ),
+      ),
+      body: InteractiveViewer(
+        panEnabled: true,
+        boundaryMargin: const EdgeInsets.all(20),
+        minScale: 0.5,
+        maxScale: 4,
+        child: Center(
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.white,
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                    SizedBox(height: 12),
+                    Text(
+                      'No se pudo cargar la imagen',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

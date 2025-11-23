@@ -149,8 +149,23 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
     result.fold(
       (failure) => emit(DocumentError(failure.message)),
-      (document) => emit(DocumentUploaded(document)),
+      (document) {
+        // Emitir estado de documento subido
+        emit(DocumentUploaded(document));
+      },
     );
+
+    // Si el upload fue exitoso, recargar la lista de documentos
+    if (result.isRight()) {
+      final listResult = await getDocumentsUseCase(
+        clinicalRecordId: event.clinicalRecordId,
+      );
+
+      listResult.fold(
+        (failure) => null, // Ignorar error de recarga, el upload fue exitoso
+        (documents) => emit(DocumentsLoaded(documents)),
+      );
+    }
   }
 
   void _onDocumentUploadProgress(

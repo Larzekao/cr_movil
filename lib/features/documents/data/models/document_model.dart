@@ -50,7 +50,8 @@ class DocumentModel extends DocumentEntity {
       fileName: json['file_name'] as String?,
       fileSizeBytes: json['file_size_bytes'] as int?,
       mimeType: json['mime_type'] as String?,
-      fileUrl: json['file_url'] as String?,
+      // file_url puede venir como 'file_url' o 'file' dependiendo del backend
+      fileUrl: (json['file_url'] ?? json['file']) as String?,
       ocrText: json['ocr_text'] as String?,
       ocrConfidence: json['ocr_confidence'] != null
           ? (json['ocr_confidence'] as num).toDouble()
